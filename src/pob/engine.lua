@@ -1,0 +1,183 @@
+--[[
+  Pont headless vers le moteur de calcul de Path of Building Community Fork.
+
+  Ce script est lancé par LuaJIT DEPUIS le dossier `src/` du dépôt PoB
+  (cwd = vendor/PathOfBuilding/src), et reste vivant : il lit des requêtes
+  JSON ligne par ligne sur stdin et répond en JSON sur stdout.
+
+  Pourquoi un processus persistant : l'initialisation de PoB (chargement de
+  l'arbre 3.29, des uniques, des mods) coûte plusieurs secondes. L'optimiseur
+  de gemmes support enchaîne des centaines d'évaluations — on ne peut pas
+  payer ce coût à chaque appel.
+
+  Protocole : chaque réponse est préfixée par un sentinel, car PoB écrit
+  librement sur stdout pendant le chargement et pendant les calculs.
+
+  Requêtes acceptées :
+    {"id":1,"action":"ping"}
+    {"id":2,"action":"eval","xml":"<PathOfBuilding>...</PathOfBuilding>","stats":["TotalDPS"]}
+    {"id":3,"action":"version"}
+]]
+
+local SENTINEL = "@@PBA@@"
+
+dofile("HeadlessWrapper.lua")
+
+local dkjson = require("dkjson")
+
+-- Statistiques renvoyées par défaut. Ce sont les clés réelles du tableau
+-- `build.calcsTab.mainOutput` de PoB (vérifiées sur la 3.29).
+local DEFAULT_STATS = {
+	-- Offensif
+	"TotalDPS", "CombinedDPS", "TotalDotDPS", "WithDotDPS", "AverageDamage",
+	"AverageHit", "Speed", "CritChance", "CritMultiplier", "HitChance",
+	"ManaCost", "AreaOfEffectRadius",
+	-- Défensif
+	"Life", "LifeUnreserved", "EnergyShield", "Mana", "ManaUnreserved",
+	"Ward", "TotalEHP", "Armour", "Evasion", "BlockChance", "SpellBlockChance",
+	"SpellSuppressionChance", "PhysicalDamageReduction",
+	"FireResist", "ColdResist", "LightningResist", "ChaosResist",
+	"FireResistOverCap", "ColdResistOverCap", "LightningResistOverCap",
+	"LifeRegenRecovery", "EnergyShieldRecharge",
+	"PhysicalMaximumHitTaken", "FireMaximumHitTaken", "ColdMaximumHitTaken",
+	"LightningMaximumHitTaken", "ChaosMaximumHitTaken",
+	-- Attributs / divers
+	"Str", "Dex", "Int", "Devotion",
+}
+
+local function respond(payload)
+	io.stdout:write(SENTINEL .. dkjson.encode(payload) .. "\n")
+	io.stdout:flush()
+end
+
+--- Extrait les stats demandées du dernier calcul.
+local function collectStats(wanted)
+	local out = build.calcsTab and build.calcsTab.mainOutput
+	if not out then
+		return nil, "mainOutput indisponible (le build n'a pas été calculé)"
+	end
+	local stats = {}
+	for _, key in ipairs(wanted) do
+		local v = out[key]
+		-- On ne renvoie que les scalaires : mainOutput contient aussi des
+		-- sous-tables (breakdowns) qui ne sont pas sérialisables utilement.
+		if type(v) == "number" or type(v) == "boolean" then
+			stats[key] = v
+		end
+	end
+	return stats
+end
+
+--- Charge un build depuis son XML et force un recalcul complet.
+local function evaluate(req)
+	local wanted = req.stats
+	if type(wanted) ~= "table" or #wanted == 0 then
+		wanted = DEFAULT_STATS
+	end
+
+	loadBuildFromXML(req.xml, req.name or "pba-eval")
+
+	-- BuildOutput() force le recalcul ; sans ça les stats peuvent refléter
+	-- l'état précédent quand seules les gemmes ont changé.
+	build.calcsTab:BuildOutput()
+
+	local stats, err = collectStats(wanted)
+	if not stats then
+		return { ok = false, error = err }
+	end
+
+	-- Remonter les erreurs de calcul de PoB (gemme inconnue, item invalide…)
+	-- plutôt que de renvoyer silencieusement des zéros.
+	local warnings = {}
+	if build.calcsTab.errMsg then
+		table.insert(warnings, tostring(build.calcsTab.errMsg))
+	end
+
+	return { ok = true, stats = stats, warnings = warnings }
+end
+
+local function version()
+	return {
+		ok = true,
+		pobVersion = launch and launch.versionNumber or "inconnue",
+		treeVersion = build and build.spec and build.spec.treeVersion or "inconnue",
+	}
+end
+
+--- Exporte l'index des gemmes tel que PoB l'a chargé.
+--
+-- On ne parse jamais Data/Gems.lua nous-mêmes : on lit la structure que le
+-- moteur a construite. Les données suivent donc automatiquement la ligue
+-- supportée par le fork PoB installé.
+local function gems()
+	local list = {}
+	for gemId, gem in pairs(data.gems) do
+		local ge = gem.grantedEffect
+		local entry = {
+			gemId = gemId,
+			name = gem.name,
+			baseTypeName = gem.baseTypeName,
+			variantId = gem.variantId,
+			grantedEffectId = gem.grantedEffectId,
+			support = ge and ge.support == true or false,
+			naturalMaxLevel = gem.naturalMaxLevel,
+			reqStr = gem.reqStr, reqDex = gem.reqDex, reqInt = gem.reqInt,
+			tags = {},
+			skillTypes = {},
+			supportSkillTypes = {},
+		}
+		for tag, on in pairs(gem.tags or {}) do
+			if on then table.insert(entry.tags, tag) end
+		end
+		-- skillTypes : ce que la gemme active EST.
+		-- supportSkillTypes : ce qu'une gemme de support peut soutenir.
+		-- L'intersection des deux donne un présélecteur de compatibilité
+		-- fiable, avant de mesurer réellement le gain via le moteur.
+		if ge then
+			for st, on in pairs(ge.skillTypes or {}) do
+				if on then table.insert(entry.skillTypes, st) end
+			end
+			for st, on in pairs(ge.supportSkillTypes or {}) do
+				if on then table.insert(entry.supportSkillTypes, st) end
+			end
+			entry.description = ge.description
+		end
+		table.insert(list, entry)
+	end
+	return { ok = true, gems = list }
+end
+
+local HANDLERS = {
+	ping = function() return { ok = true, pong = true } end,
+	version = version,
+	eval = evaluate,
+	gems = gems,
+}
+
+-- Signale au parent que l'initialisation est terminée et que PoB a fini
+-- d'écrire son bruit de démarrage sur stdout.
+respond({ id = 0, ok = true, ready = true })
+
+for line in io.lines() do
+	if line ~= "" then
+		local req = dkjson.decode(line)
+		if not req then
+			respond({ id = -1, ok = false, error = "JSON invalide" })
+		else
+			local handler = HANDLERS[req.action]
+			if not handler then
+				respond({ id = req.id, ok = false, error = "action inconnue: " .. tostring(req.action) })
+			else
+				-- pcall : une erreur Lua dans PoB ne doit pas tuer le worker,
+				-- sinon toute la session d'optimisation est perdue.
+				local success, result = pcall(handler, req)
+				if success then
+					result.id = req.id
+					respond(result)
+				else
+					respond({ id = req.id, ok = false, error = tostring(result) })
+				end
+			end
+		end
+	end
+end

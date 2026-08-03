@@ -1,0 +1,16 @@
+node_modules/
+dist/
+*.log
+
+# Path of Building Community Fork est cloné localement par scripts/setup-pob.sh
+# (~1.1 Go) — jamais commité dans ce dépôt. Le motif couvre aussi le cas où
+# vendor/PathOfBuilding est un lien symbolique vers un clone existant.
+vendor/
+
+# Cache local (données de gemmes extraites, réponses poe.ninja, etc.)
+.cache/
+
+# Secrets : POESESSID et autres identifiants ne doivent JAMAIS être commités.
+.env
+.env.*
+!.env.example

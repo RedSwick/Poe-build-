@@ -1,0 +1,179 @@
+{
+  "cli": {
+    "description": "Path of Exile 1 build optimizer powered by the Path of Building calculation engine",
+    "optionLocale": "interface language (fr, en, es)",
+    "optionSkill": "main skill gem (e.g. \"Winter Orb\")",
+    "optionGoal": "goal: damage, life, tankiness, balanced",
+    "optionClass": "character class",
+    "optionAscendancy": "ascendancy",
+    "optionLevel": "character level",
+    "optionLinks": "number of links in the main group",
+    "optionGemLevel": "gem level",
+    "optionGemQuality": "gem quality",
+    "optionJson": "output as JSON"
+  },
+  "engine": {
+    "starting": "Starting the Path of Building engine…",
+    "ready": "Engine ready (PoB {pobVersion}, tree {treeVersion})",
+    "loadingGems": "Loading gem data…",
+    "gemsLoaded": "{count} gems loaded ({actives} active, {supports} support)",
+    "notInstalled": "The Path of Building engine is not installed. Run first: npm run setup"
+  },
+  "search": {
+    "notFound": "Gem not found: \"{query}\"",
+    "didYouMean": "Did you mean:",
+    "isSupport": "\"{name}\" is a support gem, not a main skill."
+  },
+  "optimize": {
+    "running": "Optimizing supports for {skill} (goal: {goal})…",
+    "progress": "{label} — {done}/{total} candidates evaluated",
+    "evaluations": "{count} evaluations performed by the engine"
+  },
+  "goal": {
+    "damage": "maximum damage",
+    "life": "maximum life",
+    "tankiness": "maximum survivability",
+    "balanced": "balanced"
+  },
+  "report": {
+    "title": "Recommended build",
+    "skillSetup": "Gem setup",
+    "mainSkill": "Main skill",
+    "supports": "Support gems",
+    "inSlot": "socket in: {slot}",
+    "linkCount": "{n}-link group",
+    "socketNote": "Since 3.29 sockets have no colour requirement: any gem fits any socket (+10% quality when the colour matches).",
+    "gain": "gain",
+    "stats": "Build statistics",
+    "statsBaseline": "Before supports",
+    "statsFinal": "After supports",
+    "alternatives": "Alternatives considered",
+    "priorities": "Stats to prioritise",
+    "noGain": "No additional support improves this build for this goal.",
+    "warning": "Engine warning: {message}",
+    "bareBuildNote": "This calculation is for a character with no gear and no allocated passive tree: absolute values are low, only the differences between supports are meaningful.",
+    "goalNoDefensiveEffect": "Note: for this goal, no support gem changes your defences — a skill link only affects damage. The ranking above therefore falls back to DPS. Life and survivability come from the passive tree and gear, which this tool does not optimise yet."
+  },
+  "stat": {
+    "CombinedDPS": "Total DPS",
+    "TotalDPS": "Hit DPS",
+    "TotalDotDPS": "Damage over time",
+    "AverageDamage": "Average damage",
+    "Speed": "Speed",
+    "CritChance": "Crit chance",
+    "ManaCost": "Mana cost",
+    "Life": "Life",
+    "LifeUnreserved": "Unreserved life",
+    "EnergyShield": "Energy shield",
+    "Mana": "Mana",
+    "TotalEHP": "Effective HP",
+    "Armour": "Armour",
+    "Evasion": "Evasion",
+    "FireResist": "Fire resistance",
+    "ColdResist": "Cold resistance",
+    "LightningResist": "Lightning resistance",
+    "ChaosResist": "Chaos resistance",
+    "Str": "Strength",
+    "Dex": "Dexterity",
+    "Int": "Intelligence"
+  },
+  "priority": {
+    "damage": "This goal favours stats that multiply damage.",
+    "life": "This goal favours the life and energy shield pool.",
+    "tankiness": "This goal favours mitigation and resistances.",
+    "balanced": "This goal seeks a compromise between damage and survivability."
+  },
+  "error": {
+    "generic": "Error: {message}"
+  },
+  "priorityList": {
+    "damage": [
+      {
+        "label": "\"More\" multipliers (support gems)",
+        "why": "multiplicative, they dominate everything else"
+      },
+      {
+        "label": "Increased / skill damage",
+        "why": "additive with each other, stack them on the tree"
+      },
+      {
+        "label": "Cast or attack speed",
+        "why": "directly multiplies DPS"
+      },
+      {
+        "label": "Crit chance and crit multiplier",
+        "why": "raise both together or neither is worth it"
+      },
+      {
+        "label": "Resistance penetration",
+        "why": "very strong in the endgame"
+      }
+    ],
+    "life": [
+      {
+        "label": "Maximum life (%)",
+        "why": "tree percentages come first"
+      },
+      {
+        "label": "Flat maximum life on gear",
+        "why": "the base the percentages apply to"
+      },
+      {
+        "label": "Hybrid energy shield",
+        "why": "if the class and ascendancy suit it"
+      },
+      {
+        "label": "Recovery (regen, leech)",
+        "why": "a pool that never refills is useless"
+      },
+      {
+        "label": "Reduced mana reservation",
+        "why": "frees up unreserved life"
+      }
+    ],
+    "tankiness": [
+      {
+        "label": "Elemental resistances capped (75%)",
+        "why": "absolute priority, before any other defence"
+      },
+      {
+        "label": "Maximum life and energy shield",
+        "why": "the basis of EHP"
+      },
+      {
+        "label": "Physical damage reduction",
+        "why": "armour and endurance charges"
+      },
+      {
+        "label": "Spell suppression or evasion",
+        "why": "depending on the defensive archetype"
+      },
+      {
+        "label": "Chaos resistance",
+        "why": "often neglected, expensive in the endgame"
+      }
+    ],
+    "balanced": [
+      {
+        "label": "Elemental resistances capped (75%)",
+        "why": "non-negotiable before optimising anything else"
+      },
+      {
+        "label": "Maximum life (%)",
+        "why": "baseline survivability"
+      },
+      {
+        "label": "\"More\" multipliers (support gems)",
+        "why": "best damage per investment"
+      },
+      {
+        "label": "Cast or attack speed",
+        "why": "quality of life and DPS"
+      },
+      {
+        "label": "Recovery",
+        "why": "sustaining over time"
+      }
+    ]
+  }
+}

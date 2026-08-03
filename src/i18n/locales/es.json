@@ -1,0 +1,179 @@
+{
+  "cli": {
+    "description": "Optimizador de builds de Path of Exile 1 basado en el motor de cálculo de Path of Building",
+    "optionLocale": "idioma de la interfaz (fr, en, es)",
+    "optionSkill": "gema principal (p. ej. «Winter Orb»)",
+    "optionGoal": "objetivo: damage, life, tankiness, balanced",
+    "optionClass": "clase de personaje",
+    "optionAscendancy": "ascendencia",
+    "optionLevel": "nivel del personaje",
+    "optionLinks": "número de enlaces del grupo principal",
+    "optionGemLevel": "nivel de las gemas",
+    "optionGemQuality": "calidad de las gemas",
+    "optionJson": "salida en formato JSON"
+  },
+  "engine": {
+    "starting": "Iniciando el motor de Path of Building…",
+    "ready": "Motor listo (PoB {pobVersion}, árbol {treeVersion})",
+    "loadingGems": "Cargando datos de gemas…",
+    "gemsLoaded": "{count} gemas cargadas ({actives} activas, {supports} de soporte)",
+    "notInstalled": "El motor de Path of Building no está instalado. Ejecuta primero: npm run setup"
+  },
+  "search": {
+    "notFound": "Gema no encontrada: «{query}»",
+    "didYouMean": "¿Querías decir:",
+    "isSupport": "«{name}» es una gema de soporte, no una habilidad principal."
+  },
+  "optimize": {
+    "running": "Optimizando soportes para {skill} (objetivo: {goal})…",
+    "progress": "{label} — {done}/{total} candidatos evaluados",
+    "evaluations": "{count} evaluaciones realizadas por el motor"
+  },
+  "goal": {
+    "damage": "daño máximo",
+    "life": "vida máxima",
+    "tankiness": "supervivencia máxima",
+    "balanced": "equilibrado"
+  },
+  "report": {
+    "title": "Build recomendada",
+    "skillSetup": "Configuración de gemas",
+    "mainSkill": "Gema principal",
+    "supports": "Gemas de soporte",
+    "inSlot": "colocar en: {slot}",
+    "linkCount": "grupo de {n} enlaces",
+    "socketNote": "Desde la 3.29 los engarces no tienen restricción de color: cualquier gema entra en cualquier engarce (+10 % de calidad si el color coincide).",
+    "gain": "ganancia",
+    "stats": "Estadísticas de la build",
+    "statsBaseline": "Antes de los soportes",
+    "statsFinal": "Después de los soportes",
+    "alternatives": "Alternativas consideradas",
+    "priorities": "Estadísticas a priorizar",
+    "noGain": "Ningún soporte adicional mejora esta build para este objetivo.",
+    "warning": "Advertencia del motor: {message}",
+    "bareBuildNote": "Este cálculo corresponde a un personaje sin equipo ni árbol de pasivas asignado: los valores absolutos son bajos, solo las diferencias entre soportes son significativas.",
+    "goalNoDefensiveEffect": "Nota: para este objetivo, ninguna gema de soporte modifica tus defensas — un enlace de habilidad solo afecta al daño. La clasificación anterior recae por tanto en el DPS. La vida y la supervivencia dependen del árbol de pasivas y del equipo, que esta herramienta aún no optimiza."
+  },
+  "stat": {
+    "CombinedDPS": "DPS total",
+    "TotalDPS": "DPS de golpe",
+    "TotalDotDPS": "Daño con el tiempo",
+    "AverageDamage": "Daño medio",
+    "Speed": "Velocidad",
+    "CritChance": "Probabilidad de crítico",
+    "ManaCost": "Coste de maná",
+    "Life": "Vida",
+    "LifeUnreserved": "Vida no reservada",
+    "EnergyShield": "Escudo de energía",
+    "Mana": "Maná",
+    "TotalEHP": "Vida efectiva (EHP)",
+    "Armour": "Armadura",
+    "Evasion": "Evasión",
+    "FireResist": "Resistencia al fuego",
+    "ColdResist": "Resistencia al frío",
+    "LightningResist": "Resistencia al rayo",
+    "ChaosResist": "Resistencia al caos",
+    "Str": "Fuerza",
+    "Dex": "Destreza",
+    "Int": "Inteligencia"
+  },
+  "priority": {
+    "damage": "Este objetivo prioriza las estadísticas que multiplican el daño.",
+    "life": "Este objetivo prioriza la reserva de vida y escudo de energía.",
+    "tankiness": "Este objetivo prioriza la mitigación y las resistencias.",
+    "balanced": "Este objetivo busca un compromiso entre daño y supervivencia."
+  },
+  "error": {
+    "generic": "Error: {message}"
+  },
+  "priorityList": {
+    "damage": [
+      {
+        "label": "Multiplicadores «more» (gemas de soporte)",
+        "why": "multiplicativos, dominan todo lo demás"
+      },
+      {
+        "label": "Daño aumentado / daño de habilidad",
+        "why": "aditivos entre sí, acumúlalos en el árbol"
+      },
+      {
+        "label": "Velocidad de lanzamiento o de ataque",
+        "why": "multiplica directamente el DPS"
+      },
+      {
+        "label": "Probabilidad y multiplicador de crítico",
+        "why": "súbelos juntos o no sirven"
+      },
+      {
+        "label": "Penetración de resistencia",
+        "why": "muy eficaz en el juego final"
+      }
+    ],
+    "life": [
+      {
+        "label": "Vida máxima (%)",
+        "why": "los porcentajes del árbol son lo primero"
+      },
+      {
+        "label": "Vida máxima plana en el equipo",
+        "why": "la base sobre la que se aplican los %"
+      },
+      {
+        "label": "Escudo de energía híbrido",
+        "why": "si la clase y la ascendencia lo permiten"
+      },
+      {
+        "label": "Recuperación (regeneración, robo de vida)",
+        "why": "una reserva que no se rellena no sirve"
+      },
+      {
+        "label": "Reserva de maná reducida",
+        "why": "libera vida no reservada"
+      }
+    ],
+    "tankiness": [
+      {
+        "label": "Resistencias elementales al tope (75 %)",
+        "why": "prioridad absoluta, antes que cualquier otra defensa"
+      },
+      {
+        "label": "Vida y escudo de energía máximos",
+        "why": "la base del EHP"
+      },
+      {
+        "label": "Reducción de daño físico",
+        "why": "armadura y cargas de aguante"
+      },
+      {
+        "label": "Supresión de hechizos o evasión",
+        "why": "según el arquetipo defensivo elegido"
+      },
+      {
+        "label": "Resistencia al caos",
+        "why": "a menudo olvidada, cara en el juego final"
+      }
+    ],
+    "balanced": [
+      {
+        "label": "Resistencias elementales al tope (75 %)",
+        "why": "innegociable antes de optimizar el resto"
+      },
+      {
+        "label": "Vida máxima (%)",
+        "why": "supervivencia básica"
+      },
+      {
+        "label": "Multiplicadores «more» (gemas de soporte)",
+        "why": "mejor relación ganancia/coste en daño"
+      },
+      {
+        "label": "Velocidad de lanzamiento o de ataque",
+        "why": "comodidad de juego y DPS"
+      },
+      {
+        "label": "Recuperación",
+        "why": "aguantar a largo plazo"
+      }
+    ]
+  }
+}
