@@ -159,6 +159,31 @@ local function treeCandidates(req)
 	local spec = build.spec
 	local list = {}
 
+	-- Masteries : chaque mastery offre plusieurs effets au choix. On expose
+	-- chaque couple (mastery, effet) comme un candidat distinct, car c'est
+	-- l'effet choisi qui fait la valeur du nœud, pas le nœud lui-même.
+	local masteries = {}
+	for id, node in pairs(spec.nodes) do
+		if node.type == "Mastery" and node.masteryEffects then
+			local effects = {}
+			for _, entry in ipairs(node.masteryEffects) do
+				local effect = spec.tree.masteryEffects[entry.effect]
+				if effect then
+					table.insert(effects, { id = entry.effect, stats = effect.sd or {} })
+				end
+			end
+			if #effects > 0 then
+				table.insert(masteries, {
+					id = id,
+					name = node.dn or node.name,
+					pathDist = node.pathDist,
+					alloc = node.alloc == true,
+					effects = effects,
+				})
+			end
+		end
+	end
+
 	for id, node in pairs(spec.nodes) do
 		local keep = node.type == "Notable" or node.type == "Keystone"
 		-- Les nœuds d'ascendance d'une AUTRE ascendance sont inatteignables :
@@ -184,7 +209,13 @@ local function treeCandidates(req)
 	end
 
 	local used, ascUsed = spec:CountAllocNodes()
-	return { ok = true, candidates = list, pointsUsed = used, ascPointsUsed = ascUsed }
+	return {
+		ok = true,
+		candidates = list,
+		masteries = masteries,
+		pointsUsed = used,
+		ascPointsUsed = ascUsed,
+	}
 end
 
 --- Alloue une liste de nœuds cibles puis calcule le build.
@@ -196,12 +227,31 @@ local function treeAlloc(req)
 	local spec = build.spec
 
 	local missing = {}
+
+	-- L'effet d'une mastery doit être choisi AVANT son allocation : sans
+	-- sélection, PoB considère le nœud comme non alloué.
+	for _, m in ipairs(req.masteries or {}) do
+		local node = spec.nodes[m[1]]
+		if node then
+			spec.masterySelections[m[1]] = m[2]
+		end
+	end
+
 	for _, id in ipairs(req.targets or {}) do
 		local node = spec.nodes[id]
 		if not node then
 			table.insert(missing, id)
 		else
 			spec:AllocNode(node)
+		end
+	end
+
+	for _, m in ipairs(req.masteries or {}) do
+		local node = spec.nodes[m[1]]
+		if node then
+			spec:AllocNode(node)
+		else
+			table.insert(missing, m[1])
 		end
 	end
 
@@ -225,12 +275,18 @@ local function treeAlloc(req)
 		end
 	end
 
+	local masterySelections = {}
+	for nodeId, effectId in pairs(spec.masterySelections or {}) do
+		table.insert(masterySelections, { nodeId, effectId })
+	end
+
 	return {
 		ok = true,
 		stats = stats,
 		pointsUsed = used,
 		ascPointsUsed = ascUsed,
 		allocated = allocated,
+		masterySelections = masterySelections,
 		missing = missing,
 		url = spec:EncodeURL(TREE_URL_PREFIX),
 	}

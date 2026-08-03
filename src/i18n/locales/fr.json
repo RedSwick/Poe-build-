@@ -185,5 +185,24 @@
         "why": "tenir dans la durée"
       }
     ]
+  },
+  "audit": {
+    "title": "Audit du build",
+    "resUncapped": "Résistance {res} non cappée : {value} % (il manque {missing} points pour atteindre 75 %)",
+    "resCapped": "Résistances élémentaires au cap (75 %)",
+    "resOvercapLow": "Overcap faible ({overcap} %) : une map avec Elemental Weakness te fera passer sous le cap",
+    "chaosResLow": "Résistance au chaos négative ({value} %) : point faible classique en fin de partie",
+    "lowLifePool": "Pool de vie effectif faible ({pool}) pour de l'endgame",
+    "lowDps": "DPS faible ({dps}) : sera limitant sur les boss de fin de partie",
+    "noIssues": "Aucun problème bloquant détecté."
+  },
+  "import": {
+    "loading": "Récupération et décodage du build…",
+    "loaded": "Build importé : {class} / {asc} niveau {level} — {groups} groupes de liens, {items} objets",
+    "analysing": "Analyse du build importé…",
+    "current": "État actuel",
+    "upgrades": "Pistes d'amélioration",
+    "treeVersionMismatch": "Attention : ce build a été créé pour l'arbre {version}, alors que la ligue actuelle est en 3.29. Les valeurs peuvent différer.",
+    "mainSkillDetected": "Compétence principale détectée : {skill}"
   }
 }

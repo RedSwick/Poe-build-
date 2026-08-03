@@ -1,4 +1,9 @@
-import type { PobEngine, TreeNodeInfo, TreeAllocResult } from '../pob/bridge.js';
+import type {
+  PobEngine,
+  TreeNodeInfo,
+  TreeAllocResult,
+  MasterySelection,
+} from '../pob/bridge.js';
 import type { Goal } from './scoring-types.js';
 import { score } from './goals.js';
 
@@ -20,6 +25,8 @@ export interface TreeOptimizeOptions {
    * quasi inutiles simplement parce qu'ils sont bon marché.
    */
   minGainPercent: number;
+  /** Inclure les masteries parmi les candidats. */
+  includeMasteries: boolean;
   onProgress?: (done: number, total: number, label: string) => void;
 }
 
@@ -30,6 +37,7 @@ export const DEFAULT_TREE_OPTIONS: TreeOptimizeOptions = {
   batch: 3,
   beam: 40,
   minGainPercent: 0.5,
+  includeMasteries: true,
 };
 
 /** Points de passif d'un personnage : 1 par niveau après le 1, plus les quêtes. */
@@ -43,6 +51,19 @@ export interface ChosenNode {
   /** Points réellement consommés, chemin compris. */
   cost: number;
   gainPercent: number;
+  /** Effet retenu lorsque le nœud est une mastery. */
+  masteryEffect?: { id: number; stats: string[] };
+}
+
+/**
+ * Candidat unifié : notable, keystone, ou couple (mastery, effet).
+ *
+ * Une mastery n'a de valeur que par l'effet choisi : chaque effet est donc
+ * un candidat distinct, mis en concurrence avec les notables classiques.
+ */
+interface Candidate {
+  node: TreeNodeInfo;
+  mastery?: { nodeId: number; effect: { id: number; stats: string[] } };
 }
 
 export interface TreeOptimizeResult {
@@ -54,6 +75,7 @@ export interface TreeOptimizeResult {
   /** Lien pathofexile.com vers l'arbre obtenu. */
   url: string;
   allocated: number[];
+  masterySelections: MasterySelection[];
   evaluations: number;
 }
 
@@ -77,8 +99,29 @@ export async function optimizeTree(
 ): Promise<TreeOptimizeResult> {
   const opts = { ...DEFAULT_TREE_OPTIONS, ...options };
 
-  const { candidates } = await engine.treeCandidates(baseXml);
+  const discovered = await engine.treeCandidates(baseXml);
   let evaluations = 0;
+
+  // Notables et keystones d'un côté, chaque effet de mastery de l'autre :
+  // tous mis en concurrence sur le même critère de gain par point.
+  const candidates: Candidate[] = [
+    ...discovered.candidates.map((node) => ({ node })),
+    ...(opts.includeMasteries
+      ? discovered.masteries.flatMap((m) =>
+          m.effects.map((effect) => ({
+            node: {
+              id: m.id,
+              name: m.name,
+              type: 'Mastery' as const,
+              pathDist: m.pathDist,
+              alloc: m.alloc,
+              stats: effect.stats,
+            },
+            mastery: { nodeId: m.id, effect },
+          })),
+        )
+      : []),
+  ];
 
   const baseline = await engine.treeAlloc(baseXml, []);
   evaluations++;
@@ -88,83 +131,98 @@ export async function optimizeTree(
 
   const chosen: ChosenNode[] = [];
   const chosenIds: number[] = [];
-  const rejected = new Set<number>();
+  const chosenMasteries: MasterySelection[] = [];
+  const rejected = new Set<string>();
 
-  // Classement de la passe précédente, pour restreindre les suivantes.
-  let lastRanking: Array<{ node: TreeNodeInfo; ratio: number }> = [];
+  const keyOf = (c: Candidate) =>
+    c.mastery ? `m${c.mastery.nodeId}:${c.mastery.effect.id}` : `n${c.node.id}`;
+
+  let lastRanking: Candidate[] = [];
   let firstPass = true;
+
+  const allocWith = (c: Candidate) =>
+    engine.treeAlloc(
+      baseXml,
+      c.mastery ? chosenIds : [...chosenIds, c.node.id],
+      c.mastery
+        ? [...chosenMasteries, [c.mastery.nodeId, c.mastery.effect.id] as MasterySelection]
+        : chosenMasteries,
+    );
 
   while (current.pointsUsed < opts.budget) {
     const remaining = opts.budget - current.pointsUsed;
     const remainingAsc = opts.ascBudget - current.ascPointsUsed;
 
-    const pool = (
-      firstPass
-        ? candidates.filter((c) => (c.pathDist ?? Infinity) <= opts.maxDist)
-        : lastRanking.slice(0, opts.beam).map((r) => r.node)
-    ).filter((c) => {
-      if (chosenIds.includes(c.id) || rejected.has(c.id)) return false;
-      const dist = c.pathDist ?? Infinity;
-      // Un nœud hors budget ne sert à rien : ni en points de passif, ni en
-      // points d'ascendance qui ont leur propre réserve.
-      if (c.ascendancy) return remainingAsc > 0;
+    const pool = (firstPass ? candidates : lastRanking).filter((c) => {
+      if (rejected.has(keyOf(c))) return false;
+      // Une mastery déjà choisie ne peut pas recevoir un second effet.
+      if (c.mastery && chosenMasteries.some(([n]) => n === c.mastery!.nodeId)) return false;
+      if (!c.mastery && chosenIds.includes(c.node.id)) return false;
+
+      const dist = c.node.pathDist ?? Infinity;
+      if (c.node.ascendancy) return remainingAsc > 0;
+      if (firstPass && dist > opts.maxDist) return false;
       return dist <= remaining;
     });
 
     if (pool.length === 0) break;
 
-    const ranking: Array<{ node: TreeNodeInfo; ratio: number; gain: number; cost: number; res: TreeAllocResult }> = [];
+    const ranking: Array<{ cand: Candidate; ratio: number; gainPercent: number; cost: number }> = [];
     let done = 0;
 
     for (const cand of pool) {
-      const res = await engine.treeAlloc(baseXml, [...chosenIds, cand.id]);
+      const res = await allocWith(cand);
       evaluations++;
       done++;
       opts.onProgress?.(done, pool.length, `arbre — ${current.pointsUsed}/${opts.budget} pts`);
 
-      const cost = cand.ascendancy
+      const cost = cand.node.ascendancy
         ? res.ascPointsUsed - current.ascPointsUsed
         : res.pointsUsed - current.pointsUsed;
       if (cost <= 0) continue;
 
       const s = score(res.stats, goal);
-      const gain = s - currentScore;
-      const gainPercent = currentScore > 0 ? (gain / currentScore) * 100 : 0;
-      if (gain <= 0 || gainPercent < opts.minGainPercent) {
-        // Inutile de le reproposer à chaque passe : un nœud sans intérêt
-        // maintenant le restera, l'arbre ne fera que grandir autour.
-        rejected.add(cand.id);
+      const gainPercent = currentScore > 0 ? ((s - currentScore) / currentScore) * 100 : 0;
+      if (s <= currentScore || gainPercent < opts.minGainPercent) {
+        // Inutile de le reproposer : un nœud sans intérêt maintenant le
+        // restera, l'arbre ne fera que grandir autour.
+        rejected.add(keyOf(cand));
         continue;
       }
-      ranking.push({ node: cand, ratio: gain / cost, gain, cost, res });
+      ranking.push({ cand, ratio: (s - currentScore) / cost, gainPercent, cost });
     }
 
     if (ranking.length === 0) break;
     ranking.sort((a, b) => b.ratio - a.ratio);
-    lastRanking = ranking.map((r) => ({ node: r.node, ratio: r.ratio }));
+    lastRanking = ranking.slice(0, opts.beam).map((r) => r.cand);
     firstPass = false;
 
-    // On alloue plusieurs nœuds par passe : réévaluer tout le pool après
-    // chaque point dépensé serait exact mais bien trop lent.
+    // Plusieurs nœuds par passe : réévaluer tout le pool après chaque point
+    // dépensé serait exact mais bien trop lent.
     let allocatedThisPass = 0;
     for (const best of ranking) {
       if (allocatedThisPass >= opts.batch) break;
-      if (current.pointsUsed + best.cost > opts.budget && !best.node.ascendancy) continue;
+      if (!best.cand.node.ascendancy && current.pointsUsed + best.cost > opts.budget) continue;
 
-      const res = await engine.treeAlloc(baseXml, [...chosenIds, best.node.id]);
+      const res = await allocWith(best.cand);
       evaluations++;
-      const realCost = best.node.ascendancy
+      const realCost = best.cand.node.ascendancy
         ? res.ascPointsUsed - current.ascPointsUsed
         : res.pointsUsed - current.pointsUsed;
       const s = score(res.stats, goal);
       const realGainPercent = currentScore > 0 ? ((s - currentScore) / currentScore) * 100 : 0;
       if (realCost <= 0 || realGainPercent < opts.minGainPercent) continue;
 
-      chosenIds.push(best.node.id);
+      if (best.cand.mastery) {
+        chosenMasteries.push([best.cand.mastery.nodeId, best.cand.mastery.effect.id]);
+      } else {
+        chosenIds.push(best.cand.node.id);
+      }
       chosen.push({
-        node: best.node,
+        node: best.cand.node,
         cost: realCost,
         gainPercent: realGainPercent,
+        masteryEffect: best.cand.mastery?.effect,
       });
       currentScore = s;
       current = res;
@@ -173,15 +231,17 @@ export async function optimizeTree(
 
     if (allocatedThisPass === 0) break;
 
-    // Les distances changent à mesure que l'arbre grandit : un notable
-    // voisin d'un nœud fraîchement alloué devient bien moins cher.
+    // Les distances changent à mesure que l'arbre grandit : un nœud voisin
+    // d'un point fraîchement alloué devient bien moins cher.
     const refreshed = await engine.treeCandidates(
       baseXml.replace(/nodes="[^"]*"/, `nodes="${current.allocated.join(',')}"`),
     );
     evaluations++;
-    for (const c of refreshed.candidates) {
-      const known = candidates.find((k) => k.id === c.id);
-      if (known) known.pathDist = c.pathDist;
+    const dist = new Map<number, number | undefined>();
+    for (const c of refreshed.candidates) dist.set(c.id, c.pathDist);
+    for (const m of refreshed.masteries) dist.set(m.id, m.pathDist);
+    for (const c of candidates) {
+      if (dist.has(c.node.id)) c.node.pathDist = dist.get(c.node.id);
     }
   }
 
@@ -193,6 +253,7 @@ export async function optimizeTree(
     ascPointsUsed: current.ascPointsUsed,
     url: current.url,
     allocated: current.allocated,
+    masterySelections: chosenMasteries,
     evaluations,
   };
 }

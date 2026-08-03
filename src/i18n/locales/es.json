@@ -185,5 +185,24 @@
         "why": "aguantar a largo plazo"
       }
     ]
+  },
+  "audit": {
+    "title": "Auditoría de la build",
+    "resUncapped": "Resistencia {res} sin tope: {value} % (faltan {missing} puntos para llegar al 75 %)",
+    "resCapped": "Resistencias elementales al tope (75 %)",
+    "resOvercapLow": "Overcap bajo ({overcap} %): un mapa con Elemental Weakness te dejará por debajo del tope",
+    "chaosResLow": "Resistencia al caos negativa ({value} %): punto débil clásico en el juego final",
+    "lowLifePool": "Reserva de vida efectiva baja ({pool}) para el juego final",
+    "lowDps": "DPS bajo ({dps}): será limitante en los jefes del juego final",
+    "noIssues": "No se ha detectado ningún problema bloqueante."
+  },
+  "import": {
+    "loading": "Obteniendo y decodificando la build…",
+    "loaded": "Build importada: {class} / {asc} nivel {level} — {groups} grupos de enlaces, {items} objetos",
+    "analysing": "Analizando la build importada…",
+    "current": "Estado actual",
+    "upgrades": "Vías de mejora",
+    "treeVersionMismatch": "Atención: esta build es para el árbol {version}, mientras que la liga actual es 3.29. Los valores pueden diferir.",
+    "mainSkillDetected": "Habilidad principal detectada: {skill}"
   }
 }

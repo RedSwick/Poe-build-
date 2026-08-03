@@ -11,8 +11,11 @@ import {
 } from './domain/treeOptimizer.js';
 import { toPobXml } from './pob/buildXml.js';
 import { renderReport, renderJson } from './report/render.js';
+import { renderImport } from './report/renderImport.js';
 import { createTranslator, availableLocales } from './i18n/index.js';
 import type { BuildDraft } from './domain/types.js';
+import { fetchBuildFromUrlOrCode, summarizeBuildXml } from './pob/importCode.js';
+import { auditBuild, snapshot } from './domain/audit.js';
 
 /** Résultat neutre quand l'optimisation des supports est désactivée. */
 function emptySupportResult(): OptimizeResult {
@@ -182,6 +185,61 @@ program
       };
 
       console.log(opts.json ? renderJson(reportInput) : renderReport(t, reportInput));
+    } catch (err) {
+      console.error(t('error.generic', { message: (err as Error).message }));
+      process.exitCode = 1;
+    } finally {
+      engine.stop();
+    }
+  });
+
+program
+  .command('import')
+  .description('importe un build (code PoB, lien pastebin/pobb.in) et l\'analyse')
+  .argument('<source>', 'code PoB, lien pastebin.com ou pobb.in')
+  .option('--locale <locale>')
+  .option('--json', 'sortie JSON')
+  .option('--upgrade', 'chercher aussi des améliorations de gemmes de support')
+  .option('-g, --goal <goal>', 'damage | life | tankiness | balanced', 'balanced')
+  .action(async (source: string, opts) => {
+    const t = createTranslator(opts.locale);
+    const engine = new PobEngine();
+    const quiet = Boolean(opts.json);
+    const log = (s: string) => { if (!quiet) console.error(s); };
+
+    try {
+      log(t('import.loading'));
+      const xml = await fetchBuildFromUrlOrCode(source);
+      const summary = summarizeBuildXml(xml);
+      log(
+        t('import.loaded', {
+          class: summary.className,
+          asc: summary.ascendancy,
+          level: summary.level,
+          groups: summary.groups.length,
+          items: summary.itemCount,
+        }),
+      );
+      // Un build exporté sur un ancien arbre ne se compare pas directement
+      // aux valeurs de la ligue courante : il faut le dire, pas le masquer.
+      if (summary.treeVersion && summary.treeVersion !== '3_29') {
+        log(t('import.treeVersionMismatch', { version: summary.treeVersion.replace('_', '.') }));
+      }
+
+      await engine.start();
+      log(t('import.analysing'));
+      const { stats, warnings } = await engine.evaluate(xml);
+      for (const w of warnings) log(t('report.warning', { message: w }));
+
+      const findings = auditBuild(stats);
+      const snap = snapshot(stats);
+
+      if (opts.json) {
+        console.log(JSON.stringify({ summary, snapshot: snap, findings }, null, 2));
+        return;
+      }
+
+      console.log(renderImport(t, summary, snap, findings));
     } catch (err) {
       console.error(t('error.generic', { message: (err as Error).message }));
       process.exitCode = 1;

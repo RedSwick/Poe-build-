@@ -25,7 +25,7 @@ export interface EvalResult {
 export interface TreeNodeInfo {
   id: number;
   name: string;
-  type: 'Notable' | 'Keystone';
+  type: 'Notable' | 'Keystone' | 'Mastery';
   ascendancy?: string;
   /** Points nécessaires pour l'atteindre depuis l'arbre actuel. */
   pathDist?: number;
@@ -34,12 +34,25 @@ export interface TreeNodeInfo {
   stats: string[];
 }
 
+/** Une mastery et les effets qu'elle propose au choix. */
+export interface MasteryInfo {
+  id: number;
+  name: string;
+  pathDist?: number;
+  alloc: boolean;
+  effects: Array<{ id: number; stats: string[] }>;
+}
+
+/** Couple (nœud de mastery, effet choisi). */
+export type MasterySelection = [nodeId: number, effectId: number];
+
 export interface TreeAllocResult {
   stats: PobStats;
   /** Points de passif consommés (hors ascendance). */
   pointsUsed: number;
   ascPointsUsed: number;
   allocated: number[];
+  masterySelections: MasterySelection[];
   missing: number[];
   /** Lien pathofexile.com vers l'arbre obtenu. */
   url: string;
@@ -183,6 +196,7 @@ export class PobEngine {
   /** Liste les notables et mots-clés allouables pour un build. */
   async treeCandidates(xml: string): Promise<{
     candidates: TreeNodeInfo[];
+    masteries: MasteryInfo[];
     pointsUsed: number;
     ascPointsUsed: number;
   }> {
@@ -198,9 +212,10 @@ export class PobEngine {
   async treeAlloc(
     xml: string,
     targets: number[],
+    masteries: MasterySelection[] = [],
     stats?: string[],
   ): Promise<TreeAllocResult> {
-    return this.request({ action: 'tree_alloc', xml, targets, stats });
+    return this.request({ action: 'tree_alloc', xml, targets, masteries, stats });
   }
 
   /** Exporte l'index des gemmes tel que chargé par PoB. */

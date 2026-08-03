@@ -63,6 +63,59 @@ export function effectiveHp(stats: PobStatsLike): number {
   return ehp > 0 ? ehp : lifePool(stats);
 }
 
+/** Cap de résistance élémentaire par défaut dans Path of Exile. */
+export const ELEMENTAL_RES_CAP = 75;
+
+export const ELEMENTAL_RESISTANCES = ['FireResist', 'ColdResist', 'LightningResist'] as const;
+
+export interface ResistanceStatus {
+  fire: number;
+  cold: number;
+  lightning: number;
+  chaos: number;
+  /** Résistances élémentaires manquantes pour atteindre le cap. */
+  elementalShortfall: number;
+  capped: boolean;
+}
+
+export function resistanceStatus(stats: PobStatsLike): ResistanceStatus {
+  const fire = num(stats, 'FireResist');
+  const cold = num(stats, 'ColdResist');
+  const lightning = num(stats, 'LightningResist');
+  const chaos = num(stats, 'ChaosResist');
+  const elementalShortfall =
+    Math.max(0, ELEMENTAL_RES_CAP - fire) +
+    Math.max(0, ELEMENTAL_RES_CAP - cold) +
+    Math.max(0, ELEMENTAL_RES_CAP - lightning);
+  return { fire, cold, lightning, chaos, elementalShortfall, capped: elementalShortfall === 0 };
+}
+
+/**
+ * Facteur de pénalité tant que les résistances ne sont pas au cap.
+ *
+ * Règle non négociable du jeu : sous 75 % de résistance élémentaire, un
+ * personnage meurt en endgame quels que soient ses dégâts. La pénalité est
+ * donc appliquée au score entier, pas ajoutée comme un simple bonus — sans
+ * ça l'optimiseur préfère toujours des dégâts à des résistances.
+ *
+ * La résistance au chaos n'a pas de cap obligatoire mais compte pour un
+ * petit bonus : elle est le trou défensif le plus courant en fin de partie.
+ */
+export function resistanceFactor(stats: PobStatsLike): number {
+  const res = resistanceStatus(stats);
+
+  // Décroissance douce plutôt que couperet : un build à 70 % doit être noté
+  // au-dessus d'un build à 20 %, sinon l'optimiseur n'a aucun gradient à
+  // suivre pour combler l'écart.
+  const elemental = 1 / (1 + res.elementalShortfall * 0.02);
+
+  // Bonus progressif jusqu'à 75 % de chaos, sans jamais dominer l'élémentaire.
+  const chaosProgress = Math.min(Math.max(res.chaos, -60), ELEMENTAL_RES_CAP);
+  const chaos = 1 + ((chaosProgress + 60) / 135) * 0.15;
+
+  return elemental * chaos;
+}
+
 /**
  * Note un build selon un objectif.
  *
@@ -70,8 +123,11 @@ export function effectiveHp(stats: PobStatsLike): number {
  * dégâts en divisant sa survie par deux n'est pas récompensé, ce qui évite
  * les recommandations absurdes de type « glass cannon » quand l'objectif est
  * équilibré.
+ *
+ * Le tout est pondéré par l'état des résistances : tant qu'elles ne sont pas
+ * au cap, tout le reste vaut moins.
  */
-export function score(stats: PobStatsLike, goal: Goal): number {
+export function score(stats: PobStatsLike, goal: Goal, opts: { enforceResCap?: boolean } = {}): number {
   const parts: Record<string, number> = {
     dps: totalDamage(stats),
     ehp: effectiveHp(stats),
@@ -84,6 +140,10 @@ export function score(stats: PobStatsLike, goal: Goal): number {
     // Un build sans dégâts ou sans survie doit être écarté, pas noté 0
     // partout : on plancher à 1 pour garder la fonction exploitable.
     acc *= Math.pow(Math.max(value, 1), weight);
+  }
+
+  if (opts.enforceResCap !== false) {
+    acc *= resistanceFactor(stats);
   }
   return acc;
 }

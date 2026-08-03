@@ -145,7 +145,8 @@ export function renderReport(t: TFunction, input: ReportInput): string {
       line(`  ${DIM}${t('report.treeNoGain')}${R}`);
     } else {
       for (const c of tree.chosen) {
-        const kind = c.node.type === 'Keystone' ? '★' : '●';
+        const kind =
+          c.node.type === 'Keystone' ? '★' : c.node.type === 'Mastery' ? '◈' : '●';
         const asc = c.node.ascendancy ? ` ${DIM}[${c.node.ascendancy}]${R}` : '';
         line(
           `  ${B}${kind} ${c.node.name}${R}${asc}  ` +
@@ -270,8 +271,10 @@ export function renderJson(input: ReportInput): string {
               cost: c.cost,
               gainPercent: Number(c.gainPercent.toFixed(2)),
               stats: c.node.stats,
+              masteryEffectId: c.masteryEffect?.id,
             })),
             allocated: input.tree.allocated,
+            masterySelections: input.tree.masterySelections,
           }
         : undefined,
       evaluations: result.evaluations,

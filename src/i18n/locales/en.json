@@ -185,5 +185,24 @@
         "why": "sustaining over time"
       }
     ]
+  },
+  "audit": {
+    "title": "Build audit",
+    "resUncapped": "{res} resistance not capped: {value}% ({missing} points short of 75%)",
+    "resCapped": "Elemental resistances capped (75%)",
+    "resOvercapLow": "Low overcap ({overcap}%): an Elemental Weakness map will push you under the cap",
+    "chaosResLow": "Negative chaos resistance ({value}%): a classic endgame weak spot",
+    "lowLifePool": "Low effective life pool ({pool}) for endgame",
+    "lowDps": "Low DPS ({dps}): will be limiting on endgame bosses",
+    "noIssues": "No blocking issue detected."
+  },
+  "import": {
+    "loading": "Fetching and decoding the build…",
+    "loaded": "Build imported: {class} / {asc} level {level} — {groups} link groups, {items} items",
+    "analysing": "Analysing the imported build…",
+    "current": "Current state",
+    "upgrades": "Improvement leads",
+    "treeVersionMismatch": "Warning: this build targets tree {version}, while the current league is 3.29. Values may differ.",
+    "mainSkillDetected": "Main skill detected: {skill}"
   }
 }
