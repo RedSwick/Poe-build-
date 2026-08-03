@@ -3,10 +3,28 @@ import { Command } from 'commander';
 import { PobEngine } from './pob/bridge.js';
 import { loadGemIndex } from './data/gems.js';
 import { resolveGoal } from './domain/goals.js';
-import { optimizeSupports } from './domain/optimizer.js';
+import { optimizeSupports, type OptimizeResult } from './domain/optimizer.js';
+import {
+  optimizeTree,
+  passivePointsForLevel,
+  type TreeOptimizeResult,
+} from './domain/treeOptimizer.js';
+import { toPobXml } from './pob/buildXml.js';
 import { renderReport, renderJson } from './report/render.js';
 import { createTranslator, availableLocales } from './i18n/index.js';
 import type { BuildDraft } from './domain/types.js';
+
+/** Résultat neutre quand l'optimisation des supports est désactivée. */
+function emptySupportResult(): OptimizeResult {
+  return {
+    chosen: [],
+    runnerUps: [],
+    baselineScore: 0,
+    baselineStats: {},
+    finalStats: {},
+    evaluations: 0,
+  };
+}
 
 const program = new Command();
 
@@ -29,6 +47,12 @@ program
   .option('--locale <locale>', `langue (${availableLocales().join(', ')})`)
   .option('--json', 'sortie JSON')
   .option('--refresh-gems', 'recharge les données de gemmes depuis PoB')
+  .option('--no-tree', 'ne pas optimiser l\'arbre de passifs')
+  .option('--no-supports', 'ne pas optimiser les gemmes de support')
+  .option('--tree-budget <n>', 'points de passif disponibles (défaut : selon le niveau)')
+  .option('--tree-max-dist <n>', 'distance max d\'un notable candidat', '12')
+  .option('--tree-batch <n>', 'notables alloués par passe', '3')
+  .option('--tree-min-gain <pct>', 'gain minimum pour qu\'un notable soit pris', '0.5')
   .action(async (skill: string, opts) => {
     const t = createTranslator(opts.locale);
     const engine = new PobEngine();
@@ -85,24 +109,63 @@ program
       };
 
       let lastLabel = '';
-      const result = await optimizeSupports(engine, gems, baseDraft, mainGem, goal, {
-        links,
-        gemLevel,
-        gemQuality,
-        onProgress: (done, total, label) => {
-          if (quiet) return;
-          // Réécriture sur place uniquement sur un vrai terminal : redirigée
-          // vers un fichier ou un pipe, la barre de progression produirait
-          // des milliers de lignes.
-          if (process.stderr.isTTY) {
-            if (label !== lastLabel) { process.stderr.write('\n'); lastLabel = label; }
-            process.stderr.write(`\r  ${t('optimize.progress', { label, done, total })}   `);
-          } else if (done === total) {
-            process.stderr.write(`  ${t('optimize.progress', { label, done, total })}\n`);
-          }
-        },
-      });
+      const progress = (done: number, total: number, label: string) => {
+        if (quiet) return;
+        // Réécriture sur place uniquement sur un vrai terminal : redirigée
+        // vers un fichier ou un pipe, la barre de progression produirait
+        // des milliers de lignes.
+        if (process.stderr.isTTY) {
+          if (label !== lastLabel) { process.stderr.write('\n'); lastLabel = label; }
+          process.stderr.write(`\r  ${t('optimize.progress', { label, done, total })}   `);
+        } else if (done === total) {
+          process.stderr.write(`  ${t('optimize.progress', { label, done, total })}\n`);
+        }
+      };
+
+      const result = opts.supports
+        ? await optimizeSupports(engine, gems, baseDraft, mainGem, goal, {
+            links,
+            gemLevel,
+            gemQuality,
+            onProgress: progress,
+          })
+        : emptySupportResult();
       if (!quiet) process.stderr.write('\n');
+
+      // L'arbre est optimisé APRÈS les supports, avec le setup de gemmes
+      // retenu : le gain d'un notable dépend des supports en place.
+      let tree: TreeOptimizeResult | undefined;
+      if (opts.tree) {
+        const draftWithSupports: BuildDraft = {
+          ...baseDraft,
+          ascendClassId: 1,
+          groups: [
+            {
+              slot: opts.slot,
+              main: { name: mainGem.name, level: gemLevel, quality: gemQuality },
+              supports: result.chosen.map((s) => ({
+                name: s.gem.name,
+                level: gemLevel,
+                quality: gemQuality,
+              })),
+            },
+          ],
+        };
+        const budget = opts.treeBudget
+          ? Number(opts.treeBudget)
+          : passivePointsForLevel(level);
+
+        log('');
+        log(t('optimize.runningTree', { budget }));
+        tree = await optimizeTree(engine, toPobXml(draftWithSupports), goal, {
+          budget,
+          maxDist: Number(opts.treeMaxDist),
+          batch: Number(opts.treeBatch),
+          minGainPercent: Number(opts.treeMinGain),
+          onProgress: progress,
+        });
+        if (!quiet) process.stderr.write('\n');
+      }
 
       const reportInput = {
         mainGem,
@@ -110,6 +173,7 @@ program
         links,
         goal,
         result,
+        tree,
         gemLevel,
         gemQuality,
         className: opts.class,

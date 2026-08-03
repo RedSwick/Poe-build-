@@ -21,6 +21,30 @@ export interface EvalResult {
   warnings: string[];
 }
 
+/** Nœud d'arbre de passifs, tel qu'exposé par PoB. */
+export interface TreeNodeInfo {
+  id: number;
+  name: string;
+  type: 'Notable' | 'Keystone';
+  ascendancy?: string;
+  /** Points nécessaires pour l'atteindre depuis l'arbre actuel. */
+  pathDist?: number;
+  alloc: boolean;
+  /** Texte des effets du nœud, tel qu'affiché en jeu. */
+  stats: string[];
+}
+
+export interface TreeAllocResult {
+  stats: PobStats;
+  /** Points de passif consommés (hors ascendance). */
+  pointsUsed: number;
+  ascPointsUsed: number;
+  allocated: number[];
+  missing: number[];
+  /** Lien pathofexile.com vers l'arbre obtenu. */
+  url: string;
+}
+
 interface Pending {
   resolve: (value: any) => void;
   reject: (err: Error) => void;
@@ -154,6 +178,29 @@ export class PobEngine {
   /** Version de PoB et version de l'arbre de passifs actuellement chargée. */
   async version(): Promise<{ pobVersion: string; treeVersion: string }> {
     return this.request({ action: 'version' });
+  }
+
+  /** Liste les notables et mots-clés allouables pour un build. */
+  async treeCandidates(xml: string): Promise<{
+    candidates: TreeNodeInfo[];
+    pointsUsed: number;
+    ascPointsUsed: number;
+  }> {
+    return this.request({ action: 'tree_candidates', xml });
+  }
+
+  /**
+   * Alloue des nœuds cibles et recalcule le build.
+   *
+   * PoB alloue lui-même les nœuds de chemin menant à chaque cible : le coût
+   * réel en points est donc `pointsUsed`, pas le nombre de cibles.
+   */
+  async treeAlloc(
+    xml: string,
+    targets: number[],
+    stats?: string[],
+  ): Promise<TreeAllocResult> {
+    return this.request({ action: 'tree_alloc', xml, targets, stats });
   }
 
   /** Exporte l'index des gemmes tel que chargé par PoB. */

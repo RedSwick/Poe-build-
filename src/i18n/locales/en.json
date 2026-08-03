@@ -27,7 +27,8 @@
   "optimize": {
     "running": "Optimizing supports for {skill} (goal: {goal})…",
     "progress": "{label} — {done}/{total} candidates evaluated",
-    "evaluations": "{count} evaluations performed by the engine"
+    "evaluations": "{count} evaluations performed by the engine",
+    "runningTree": "Optimising the passive tree ({budget} points available)…"
   },
   "goal": {
     "damage": "maximum damage",
@@ -52,7 +53,16 @@
     "noGain": "No additional support improves this build for this goal.",
     "warning": "Engine warning: {message}",
     "bareBuildNote": "This calculation is for a character with no gear and no allocated passive tree: absolute values are low, only the differences between supports are meaningful.",
-    "goalNoDefensiveEffect": "Note: for this goal, no support gem changes your defences — a skill link only affects damage. The ranking above therefore falls back to DPS. Life and survivability come from the passive tree and gear, which this tool does not optimise yet."
+    "goalNoDefensiveEffect": "Note: for this goal, no support gem changes your defences — a skill link only affects damage. The ranking above therefore falls back to DPS. Life and survivability come from the passive tree and gear, which this tool does not optimise yet.",
+    "tree": "Passive tree",
+    "treePoints": "{used} passive points used out of {budget} — {asc} ascendancy points",
+    "treeCost": "{n} pts",
+    "treeUrl": "Tree link (open in your browser):",
+    "treeNoGain": "No notable improves this build for this goal.",
+    "treeStats": "Tree effect",
+    "noGearNote": "No gear is taken into account yet: absolute values stay low, but the tree and gems above are genuinely computed.",
+    "statsStart": "Start",
+    "statsOptimised": "Optimised"
   },
   "stat": {
     "CombinedDPS": "Total DPS",

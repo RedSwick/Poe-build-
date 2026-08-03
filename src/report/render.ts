@@ -3,6 +3,10 @@ import type { GemInfo, SupportEvaluation } from '../domain/types.js';
 import type { Goal } from '../domain/scoring-types.js';
 import { totalDamage, effectiveHp, lifePool } from '../domain/goals.js';
 import type { OptimizeResult } from '../domain/optimizer.js';
+import {
+  passivePointsForLevel,
+  type TreeOptimizeResult,
+} from '../domain/treeOptimizer.js';
 
 const B = '\x1b[1m';
 const DIM = '\x1b[2m';
@@ -33,6 +37,7 @@ export interface ReportInput {
   links: number;
   goal: Goal;
   result: OptimizeResult;
+  tree?: TreeOptimizeResult;
   gemLevel: number;
   gemQuality: number;
   className: string;
@@ -93,17 +98,23 @@ export function renderReport(t: TFunction, input: ReportInput): string {
   // --- Stats avant/après -----------------------------------------------
   line(`${B}${t('report.stats')}${R}`);
   const keys = HIGHLIGHT[goal.kind] ?? HIGHLIGHT.balanced;
-  const before = result.baselineStats;
-  const after = result.finalStats;
+  // On montre l'écart de bout en bout : point de départ le plus brut
+  // disponible, arrivée l'état final réellement calculé. Sans ça, sauter une
+  // étape d'optimisation laisserait le tableau vide.
+  const hasSupportRun = Object.keys(result.baselineStats).length > 0;
+  const before = hasSupportRun ? result.baselineStats : (input.tree?.baselineStats ?? {});
+  const after = input.tree?.finalStats ?? result.finalStats;
 
   const label = (k: string) => t(`stat.${k}`);
   const width = Math.max(...keys.map((k) => label(k).length)) + 2;
   // La largeur de la colonne « avant » doit tenir compte de la longueur du
   // titre traduit, sinon les en-têtes se collent dans certaines langues.
-  const colWidth = Math.max(t('report.statsBaseline').length + 2, 14);
+  const headStart = t('report.statsStart');
+  const headEnd = t('report.statsOptimised');
+  const colWidth = Math.max(headStart.length + 2, 14);
 
   line(
-    `  ${' '.repeat(width)}${DIM}${t('report.statsBaseline').padEnd(colWidth)}${t('report.statsFinal')}${R}`,
+    `  ${' '.repeat(width)}${DIM}${headStart.padEnd(colWidth)}${headEnd}${R}`,
   );
   for (const k of keys) {
     const b = typeof before[k] === 'number' ? (before[k] as number) : 0;
@@ -116,6 +127,42 @@ export function renderReport(t: TFunction, input: ReportInput): string {
     );
   }
   line();
+
+  // --- Arbre de passifs -------------------------------------------------
+  if (input.tree) {
+    const tree = input.tree;
+    line(`${B}${t('report.tree')}${R}`);
+    line(
+      `${DIM}${t('report.treePoints', {
+        used: tree.pointsUsed,
+        budget: input.level > 0 ? passivePointsForLevel(input.level) : tree.pointsUsed,
+        asc: tree.ascPointsUsed,
+      })}${R}`,
+    );
+    line();
+
+    if (tree.chosen.length === 0) {
+      line(`  ${DIM}${t('report.treeNoGain')}${R}`);
+    } else {
+      for (const c of tree.chosen) {
+        const kind = c.node.type === 'Keystone' ? '★' : '●';
+        const asc = c.node.ascendancy ? ` ${DIM}[${c.node.ascendancy}]${R}` : '';
+        line(
+          `  ${B}${kind} ${c.node.name}${R}${asc}  ` +
+            `${DIM}${t('report.treeCost', { n: c.cost })}${R}  ` +
+            `${GREEN}+${c.gainPercent.toFixed(1)} %${R}`,
+        );
+        // Le texte du nœud vient de PoB : c'est celui affiché en jeu.
+        for (const s of c.node.stats.slice(0, 2)) {
+          line(`      ${DIM}${s}${R}`);
+        }
+      }
+    }
+    line();
+    line(`  ${B}${t('report.treeUrl')}${R}`);
+    line(`  ${CYAN}${tree.url}${R}`);
+    line();
+  }
 
   // --- Priorités de stats ----------------------------------------------
   line(`${B}${t('report.priorities')}${R}`);
@@ -137,8 +184,13 @@ export function renderReport(t: TFunction, input: ReportInput): string {
     line();
   }
 
-  line(`${DIM}${t('optimize.evaluations', { count: result.evaluations })}${R}`);
-  line(`${DIM}${t('report.bareBuildNote')}${R}`);
+  const totalEvals = result.evaluations + (input.tree?.evaluations ?? 0);
+  line(`${DIM}${t('optimize.evaluations', { count: totalEvals })}${R}`);
+  // La mise en garde « personnage nu » ne vaut plus dès que l'arbre est
+  // alloué : elle deviendrait fausse et minimiserait à tort les résultats.
+  line(
+    `${DIM}${input.tree ? t('report.noGearNote') : t('report.bareBuildNote')}${R}`,
+  );
   line();
 
   return out.join('\n');
@@ -205,6 +257,23 @@ export function renderJson(input: ReportInput): string {
         name: s.gem.name,
         gainPercent: Number(s.deltaPercent.toFixed(2)),
       })),
+      tree: input.tree
+        ? {
+            pointsUsed: input.tree.pointsUsed,
+            ascPointsUsed: input.tree.ascPointsUsed,
+            url: input.tree.url,
+            nodes: input.tree.chosen.map((c) => ({
+              id: c.node.id,
+              name: c.node.name,
+              type: c.node.type,
+              ascendancy: c.node.ascendancy,
+              cost: c.cost,
+              gainPercent: Number(c.gainPercent.toFixed(2)),
+              stats: c.node.stats,
+            })),
+            allocated: input.tree.allocated,
+          }
+        : undefined,
       evaluations: result.evaluations,
     },
     null,

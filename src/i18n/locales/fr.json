@@ -27,7 +27,8 @@
   "optimize": {
     "running": "Optimisation des supports pour {skill} (objectif : {goal})…",
     "progress": "{label} — {done}/{total} candidats évalués",
-    "evaluations": "{count} évaluations effectuées par le moteur"
+    "evaluations": "{count} évaluations effectuées par le moteur",
+    "runningTree": "Optimisation de l'arbre de passifs ({budget} points disponibles)…"
   },
   "goal": {
     "damage": "dégâts maximum",
@@ -52,7 +53,16 @@
     "noGain": "Aucun support supplémentaire n'améliore ce build pour cet objectif.",
     "warning": "Avertissement du moteur : {message}",
     "bareBuildNote": "Ce calcul porte sur un personnage sans équipement ni arbre de passifs alloué : les valeurs absolues sont faibles, seuls les écarts entre supports sont significatifs.",
-    "goalNoDefensiveEffect": "Note : sur cet objectif, aucune gemme de support ne modifie tes défenses — un lien de compétence n'agit que sur les dégâts. Le classement ci-dessus retombe donc sur le DPS. La vie et la survie se jouent sur l'arbre de passifs et l'équipement, pas encore optimisés par cet outil."
+    "goalNoDefensiveEffect": "Note : sur cet objectif, aucune gemme de support ne modifie tes défenses — un lien de compétence n'agit que sur les dégâts. Le classement ci-dessus retombe donc sur le DPS. La vie et la survie se jouent sur l'arbre de passifs et l'équipement, pas encore optimisés par cet outil.",
+    "tree": "Arbre de passifs",
+    "treePoints": "{used} points de passif utilisés sur {budget} — {asc} points d'ascendance",
+    "treeCost": "{n} pts",
+    "treeUrl": "Lien de l'arbre (ouvrir dans le navigateur) :",
+    "treeNoGain": "Aucun notable n'améliore ce build pour cet objectif.",
+    "treeStats": "Effet de l'arbre",
+    "noGearNote": "Aucun équipement n'est encore pris en compte : les valeurs absolues restent basses, mais l'arbre et les gemmes ci-dessus sont, eux, réellement calculés.",
+    "statsStart": "Départ",
+    "statsOptimised": "Optimisé"
   },
   "stat": {
     "CombinedDPS": "DPS total",

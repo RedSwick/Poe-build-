@@ -147,11 +147,102 @@ local function gems()
 	return { ok = true, gems = list }
 end
 
+local TREE_URL_PREFIX = "https://www.pathofexile.com/passive-skill-tree/"
+
+--- Liste les nœuds d'arbre allouables intéressants pour un build donné.
+--
+-- On ne renvoie que les notables et les mots-clés : les nœuds « Normal »
+-- (petits +10 force, etc.) ne sont pas des cibles d'optimisation, ils sont
+-- alloués automatiquement en tant que chemin vers une cible.
+local function treeCandidates(req)
+	loadBuildFromXML(req.xml, "pba-tree")
+	local spec = build.spec
+	local list = {}
+
+	for id, node in pairs(spec.nodes) do
+		local keep = node.type == "Notable" or node.type == "Keystone"
+		-- Les nœuds d'ascendance d'une AUTRE ascendance sont inatteignables :
+		-- les proposer ferait perdre des évaluations pour rien.
+		if keep and node.ascendancyName and node.ascendancyName ~= spec.curAscendClassName then
+			keep = false
+		end
+		-- Sans chemin calculé, le nœud n'est pas reliable à l'arbre.
+		if keep and not node.path and not node.alloc then
+			keep = false
+		end
+		if keep then
+			table.insert(list, {
+				id = id,
+				name = node.dn or node.name,
+				type = node.type,
+				ascendancy = node.ascendancyName,
+				pathDist = node.pathDist,
+				alloc = node.alloc == true,
+				stats = node.sd or {},
+			})
+		end
+	end
+
+	local used, ascUsed = spec:CountAllocNodes()
+	return { ok = true, candidates = list, pointsUsed = used, ascPointsUsed = ascUsed }
+end
+
+--- Alloue une liste de nœuds cibles puis calcule le build.
+--
+-- `AllocNode` de PoB alloue aussi tout le chemin menant au nœud : on
+-- délègue donc entièrement le pathfinding au moteur au lieu de le recoder.
+local function treeAlloc(req)
+	loadBuildFromXML(req.xml, "pba-tree")
+	local spec = build.spec
+
+	local missing = {}
+	for _, id in ipairs(req.targets or {}) do
+		local node = spec.nodes[id]
+		if not node then
+			table.insert(missing, id)
+		else
+			spec:AllocNode(node)
+		end
+	end
+
+	-- Propager l'arbre modifié vers les calculs, sinon les stats reflètent
+	-- encore l'arbre chargé depuis le XML.
+	spec:BuildAllDependsAndPaths()
+	build.buildFlag = true
+	build.calcsTab:BuildOutput()
+
+	local wanted = req.stats
+	if type(wanted) ~= "table" or #wanted == 0 then wanted = DEFAULT_STATS end
+	local stats, err = collectStats(wanted)
+	if not stats then return { ok = false, error = err } end
+
+	local used, ascUsed = spec:CountAllocNodes()
+
+	local allocated = {}
+	for id, node in pairs(spec.allocNodes) do
+		if node.type ~= "ClassStart" and node.type ~= "AscendClassStart" then
+			table.insert(allocated, id)
+		end
+	end
+
+	return {
+		ok = true,
+		stats = stats,
+		pointsUsed = used,
+		ascPointsUsed = ascUsed,
+		allocated = allocated,
+		missing = missing,
+		url = spec:EncodeURL(TREE_URL_PREFIX),
+	}
+end
+
 local HANDLERS = {
 	ping = function() return { ok = true, pong = true } end,
 	version = version,
 	eval = evaluate,
 	gems = gems,
+	tree_candidates = treeCandidates,
+	tree_alloc = treeAlloc,
 }
 
 -- Signale au parent que l'initialisation est terminée et que PoB a fini

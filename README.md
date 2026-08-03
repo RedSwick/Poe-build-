@@ -12,8 +12,10 @@ le piloter.
 ## Ce que ça fait aujourd'hui
 
 À partir d'une gemme principale et d'un objectif, l'outil trouve les meilleures
-gemmes de support **en les mesurant réellement** : il construit le build, demande
-à PoB de le recalculer, et classe les candidats par gain observé.
+**gemmes de support** et le meilleur **arbre de passifs**, en les mesurant
+réellement : il construit le build, demande à PoB de le recalculer, et classe
+les candidats par gain observé. Rien n'est deviné à partir du texte des gemmes
+ou des nœuds.
 
 ```bash
 npm run setup                 # installe LuaJIT, lua-utf8 et le dépôt PoB
@@ -22,7 +24,37 @@ npx tsx src/cli.ts optimize "Winter Orb" --goal damage --links 6
 ```
 
 Sortie : setup de gemmes (principale + supports avec leur gain), emplacement,
-statistiques avant/après, statistiques à prioriser, alternatives envisagées.
+arbre de passifs alloué avec le coût en points de chaque notable, **lien
+pathofexile.com vers l'arbre**, statistiques avant/après, statistiques à
+prioriser, alternatives envisagées.
+
+Exemple réel (Winter Orb, Occultist, objectif équilibré) — l'outil retrouve
+seul les nœuds qu'un joueur prendrait : `Void Beacon` (le notable signature de
+l'Occultist pour le froid), `Elemental Overload` (correct pour une compétence
+à faible crit), `Mind Over Matter`, `Frost Walker`, `Blast Radius`.
+
+### Arbre de passifs
+
+```bash
+# Budget de points (par défaut : niveau - 1 + 22 points de quête)
+npx tsx src/cli.ts optimize "Winter Orb" --tree-budget 60
+
+# Régler la recherche : distance max des candidats, nœuds par passe, seuil de gain
+npx tsx src/cli.ts optimize "Winter Orb" --tree-max-dist 10 --tree-batch 3 --tree-min-gain 0.5
+
+# Isoler une étape
+npx tsx src/cli.ts optimize "Winter Orb" --no-supports   # arbre seul
+npx tsx src/cli.ts optimize "Winter Orb" --no-tree       # gemmes seules
+```
+
+L'arbre est optimisé **après** les gemmes, avec le setup retenu : le gain d'un
+notable dépend des supports en place. Le pathfinding et le coût en points sont
+calculés par PoB (`AllocNode`), pas réimplémentés.
+
+> **Comment lire le gain d'un notable :** il mesure l'écart entre l'arbre avant
+> et après, *chemin compris*. Un nœud à faible gain peut donc en tirer une part
+> des petits passifs traversés pour l'atteindre — ce n'est pas uniquement
+> l'effet de ses propres statistiques.
 
 ```bash
 npx tsx src/cli.ts optimize "Detonate Dead" --goal balanced --locale es
@@ -70,7 +102,8 @@ src/
   pob/buildXml.ts     Sérialisation d'un build vers le XML de PoB
   data/gems.ts        Index des gemmes, extrait de PoB (jamais scrapé)
   domain/goals.ts     Objectifs → pondérations, fonction de score
-  domain/optimizer.ts Sélection gloutonne des supports, mesurée par le moteur
+  domain/optimizer.ts     Sélection gloutonne des supports, mesurée par le moteur
+  domain/treeOptimizer.ts Allocation de l'arbre de passifs, mesurée par le moteur
   report/render.ts    Rapport terminal + sortie JSON
   i18n/               FR / EN / ES
 ```
@@ -110,13 +143,19 @@ le code métier, et que les briques réutilisables de l'écosystème PoE
 
 ## Limites actuelles (assumées)
 
-- **Pas encore d'équipement ni d'arbre de passifs alloué.** Les calculs portent sur
-  un personnage nu : les valeurs absolues sont faibles, seuls les **écarts entre
-  supports** sont significatifs.
-- **Les objectifs `life` et `tankiness` ne discriminent pas** au niveau des liens
+- **Pas encore d'équipement.** L'arbre et les gemmes sont bien calculés, mais le
+  personnage est nu : les valeurs absolues restent donc basses, et ce sont les
+  **écarts** qui font foi, pas le DPS affiché.
+- **Les objectifs `life` et `tankiness` ne discriminent pas au niveau des liens**
   de compétence : aucune gemme de support ne modifie les défenses. L'outil
-  l'affiche explicitement au lieu de faire semblant. Ces objectifs prendront leur
-  sens avec l'optimisation d'arbre et d'équipement.
+  l'affiche explicitement au lieu de faire semblant. En revanche ils sont bien
+  pris en compte par l'optimisation d'arbre.
+- **L'arbre est optimisé glouton, par passes.** Une évaluation d'arbre coûte
+  environ dix fois une évaluation de gemme (PoB reconstruit tous les chemins),
+  donc plusieurs nœuds sont alloués par balayage plutôt qu'un seul. Le résultat
+  est bon mais pas prouvé optimal, et un budget complet (111 points) prend
+  plusieurs minutes.
+- **Les jewels, masteries et jewels de cluster ne sont pas encore gérés.**
 - **Pas encore de trade ni de prix.** L'optimiseur propose volontiers des gemmes
   Awakened, sans notion de budget.
 - La sélection des supports est **gloutonne** : elle mesure chaque candidat mais
@@ -124,9 +163,9 @@ le code métier, et que les briques réutilisables de l'écosystème PoE
 
 ## Suite
 
-1. Arbre de passifs (allocation + optimisation) — donnera du sens aux objectifs défensifs
-2. Équipement et modificateurs, puis intégration trade officielle + poe.ninja
-3. Paliers de budget (league start → mirror tier)
+1. Équipement et modificateurs, puis intégration trade officielle + poe.ninja
+2. Paliers de budget (league start → mirror tier)
+3. Masteries et jewels dans l'optimisation d'arbre
 4. Couche IA (langage naturel → requête structurée)
 5. Interface web FR/EN/ES
 

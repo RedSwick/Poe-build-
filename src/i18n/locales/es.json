@@ -27,7 +27,8 @@
   "optimize": {
     "running": "Optimizando soportes para {skill} (objetivo: {goal})…",
     "progress": "{label} — {done}/{total} candidatos evaluados",
-    "evaluations": "{count} evaluaciones realizadas por el motor"
+    "evaluations": "{count} evaluaciones realizadas por el motor",
+    "runningTree": "Optimizando el árbol de pasivas ({budget} puntos disponibles)…"
   },
   "goal": {
     "damage": "daño máximo",
@@ -52,7 +53,16 @@
     "noGain": "Ningún soporte adicional mejora esta build para este objetivo.",
     "warning": "Advertencia del motor: {message}",
     "bareBuildNote": "Este cálculo corresponde a un personaje sin equipo ni árbol de pasivas asignado: los valores absolutos son bajos, solo las diferencias entre soportes son significativas.",
-    "goalNoDefensiveEffect": "Nota: para este objetivo, ninguna gema de soporte modifica tus defensas — un enlace de habilidad solo afecta al daño. La clasificación anterior recae por tanto en el DPS. La vida y la supervivencia dependen del árbol de pasivas y del equipo, que esta herramienta aún no optimiza."
+    "goalNoDefensiveEffect": "Nota: para este objetivo, ninguna gema de soporte modifica tus defensas — un enlace de habilidad solo afecta al daño. La clasificación anterior recae por tanto en el DPS. La vida y la supervivencia dependen del árbol de pasivas y del equipo, que esta herramienta aún no optimiza.",
+    "tree": "Árbol de pasivas",
+    "treePoints": "{used} puntos de pasiva usados de {budget} — {asc} puntos de ascendencia",
+    "treeCost": "{n} pts",
+    "treeUrl": "Enlace del árbol (ábrelo en el navegador):",
+    "treeNoGain": "Ningún notable mejora esta build para este objetivo.",
+    "treeStats": "Efecto del árbol",
+    "noGearNote": "Todavía no se tiene en cuenta el equipo: los valores absolutos siguen siendo bajos, pero el árbol y las gemas de arriba sí están realmente calculados.",
+    "statsStart": "Inicio",
+    "statsOptimised": "Optimizado"
   },
   "stat": {
     "CombinedDPS": "DPS total",
