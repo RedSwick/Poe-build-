@@ -34,6 +34,7 @@ import { computePriors } from './corpus/priors.js';
 import { PobPool } from './pob/pool.js';
 import { DEFAULT_COMBAT, toConfigInputs, parseEnemy, describeCombat, type CombatConfig } from './domain/config.js';
 import { profileFor } from './domain/relevance.js';
+import { analyseSensitivity } from './domain/sensitivity.js';
 
 /** Options de conditions de combat, communes à plusieurs commandes. */
 function combatFromOpts(opts: any): CombatConfig {
@@ -686,6 +687,141 @@ program
       process.exitCode = 1;
     } finally {
       engine.stop();
+    }
+  });
+
+program
+  .command('sensitivity')
+  .alias('sens')
+  .description('mesure à quelles statistiques un build répond réellement')
+  .argument('<skill>', 'gemme principale')
+  .option('-g, --goal <goal>', 'damage | life | tankiness | balanced', 'balanced')
+  .option('-c, --class <class>', 'classe', 'Witch')
+  .option('-a, --ascendancy <asc>', 'ascendance', 'Occultist')
+  .option('-l, --level <n>', 'niveau', '90')
+  .option('--supports <list>', 'supports, séparés par des virgules')
+  .option('--weapon <text>', 'texte brut d\'une arme à équiper')
+  .option('--enemy <kind>', 'none | boss | pinnacle | uber', 'pinnacle')
+  .option('--pairs', 'cherche aussi les couples de stats qui se renforcent')
+  .option('--scale <n>', 'doses appliquées pour la mesure investie', '6')
+  .option('--top <n>', 'nombre de lignes affichées par famille', '8')
+  .option('--locale <locale>')
+  .option('--json', 'sortie JSON')
+  .action(async (skill: string, opts) => {
+    const t = createTranslator(opts.locale);
+    const pool = new PobPool();
+    const quiet = Boolean(opts.json);
+    const log = (s: string) => { if (!quiet) console.error(s); };
+
+    try {
+      log(t('corpus.startingPool', { n: pool.size }));
+      await pool.start();
+      const gems = await loadGemIndex(pool as any);
+      const mainGem = gems.find(skill) ?? gems.search(skill)[0];
+      if (!mainGem || mainGem.support) {
+        console.error(t('search.notFound', { query: skill }));
+        process.exitCode = 1;
+        return;
+      }
+
+      const combat = combatFromOpts(opts);
+      const draft: BuildDraft = {
+        className: opts.class,
+        ascendancy: opts.ascendancy,
+        ascendClassId: 1,
+        level: Number(opts.level),
+        config: toConfigInputs(combat),
+        items: opts.weapon ? [{ slot: 'Weapon 1', raw: opts.weapon }] : [],
+        groups: [{
+          slot: 'Body Armour',
+          main: { name: mainGem.name, level: 20, quality: 20 },
+          supports: (opts.supports ? String(opts.supports).split(',') : [])
+            .map((n: string) => ({ name: n.trim(), level: 20, quality: 20 })),
+        }],
+      };
+
+      log(t('sensitivity.running', { skill: mainGem.name, config: describeCombat(combat) }));
+      const res = await analyseSensitivity(pool, draft, resolveGoal(opts.goal), {
+        pairs: Boolean(opts.pairs),
+        scale: Number(opts.scale),
+        onProgress: (done, total, phase) => {
+          if (!quiet) {
+            const p = phase[0].toUpperCase() + phase.slice(1);
+            process.stderr.write(`\r  ${t(`sensitivity.phase${p}`)} ${done}/${total}    `);
+            if (done === total) process.stderr.write('\n');
+          }
+        },
+      });
+
+      if (opts.json) { console.log(JSON.stringify(res, null, 2)); return; }
+
+      const pctText = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)} %`;
+      const nameOf = (a: (typeof res.axes)[number]) =>
+        a.probes.length === 1
+          ? t(`probe.${a.probes[0].key}`)
+          : t('sensitivity.pair', {
+              a: t(`probe.${a.probes[0].key}`),
+              b: t(`probe.${a.probes[1].key}`),
+            });
+      const VERDICT = {
+        linear: ['\x1b[32m', 'verdictLinear'],
+        threshold: ['\x1b[35m', 'verdictThreshold'],
+        saturating: ['\x1b[33m', 'verdictSaturating'],
+        dead: ['\x1b[2m', 'verdictDead'],
+      } as const;
+
+      console.log('');
+      console.log(`\x1b[1m\x1b[36m━━━ ${t('sensitivity.title', { skill: mainGem.name })} ━━━\x1b[0m`);
+      console.log(`\x1b[2mDPS ${Math.round(res.baseline.dps)}  ·  EHP ${Math.round(res.baseline.ehp)}\x1b[0m`);
+      console.log(`\x1b[2m${t('sensitivity.header', { scale: res.scale })}\x1b[0m`);
+
+      const top = Number(opts.top);
+      for (const group of ['offense', 'defense', 'utility'] as const) {
+        const rows = res.axes.filter((a) => a.group === group).slice(0, top);
+        if (rows.length === 0) continue;
+        console.log(`\n\x1b[1m${t(`sensitivity.${group}`)}\x1b[0m`);
+        for (const a of rows) {
+          const [col, key] = VERDICT[a.verdict];
+          console.log(
+            `  ${col}${pctText(a.atScale)}\x1b[0m`.padEnd(25) +
+              `${nameOf(a)}\n` +
+              `      \x1b[2m${t(`sensitivity.${key}`)} · ` +
+              `${t('sensitivity.marginalHint', { marginal: pctText(a.marginal) })}\x1b[0m`,
+          );
+        }
+      }
+
+      // Ce que le classement par gain brut enterre : les axes dont la
+      // première dose ne dit rien de ce qu'ils valent une fois investis.
+      const missed = res.axes
+        .filter((a) => a.verdict === 'threshold' && a.atScale > 1)
+        .sort((a, b) => b.acceleration - a.acceleration)
+        .slice(0, top);
+
+      console.log(`\n\x1b[1m${t('sensitivity.missed')}\x1b[0m`);
+      if (missed.length === 0) {
+        console.log(`  \x1b[2m${t('sensitivity.missedNone')}\x1b[0m`);
+      } else {
+        for (const a of missed) {
+          console.log(
+            `  \x1b[35m×${a.acceleration === Infinity ? '∞' : a.acceleration.toFixed(1)}\x1b[0m`.padEnd(25) +
+              `${nameOf(a)}  \x1b[2m${t('sensitivity.missedRow', {
+                marginal: pctText(a.marginal), atScale: pctText(a.atScale),
+              })}\x1b[0m`,
+          );
+        }
+        console.log(`  \x1b[2m${t('sensitivity.missedNote')}\x1b[0m`);
+      }
+
+      console.log('');
+      console.log(`\x1b[2m${t('sensitivity.scaleNote')}\x1b[0m`);
+      console.log(`\x1b[2m${t('sensitivity.note')}\x1b[0m`);
+      console.log('');
+    } catch (err) {
+      console.error(t('error.generic', { message: (err as Error).message }));
+      process.exitCode = 1;
+    } finally {
+      pool.stop();
     }
   });
 

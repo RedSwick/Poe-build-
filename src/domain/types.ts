@@ -47,6 +47,13 @@ export interface BuildDraft {
   bandit?: string;
   items?: ItemDraft[];
   config?: ConfigInput[];
+  /**
+   * Modificateurs arbitraires appliqués au personnage.
+   *
+   * Sert à sonder la réponse du build à une statistique sans avoir à
+   * fabriquer un objet qui la porte.
+   */
+  customMods?: string[];
 }
 
 /** Gemme telle qu'exportée par le moteur PoB. */

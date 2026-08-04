@@ -88,6 +88,15 @@ export function toPobXml(draft: BuildDraft): string {
     )
     .join('\n');
 
+  // PoB accepte des modificateurs libres appliqués au personnage : c'est le
+  // moyen le plus direct de tester « et si j'avais telle stat ? » sans
+  // fabriquer un objet qui la porte.
+  const customMods = (draft.customMods ?? []).length
+    ? `    <CustomModifierBlock title="pba" enabled="true">${escapeXml(
+        (draft.customMods ?? []).join('\n'),
+      )}</CustomModifierBlock>\n`
+    : '';
+
   const items = (draft.items ?? [])
     .map(
       (it, i) =>
@@ -118,6 +127,6 @@ ${itemSlots}
   </Items>
   <Config>
 ${config}
-  </Config>
+${customMods}  </Config>
 </PathOfBuilding>`;
 }

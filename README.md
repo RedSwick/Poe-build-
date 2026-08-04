@@ -194,6 +194,39 @@ npx tsx src/cli.ts corpus stats "Winter Orb"      # a priori de recherche
 
 Voir `corpus/README.md`.
 
+### Découvrir à quoi un build répond
+
+Le corpus apprend ce que les autres jouent déjà. Ça ne suffit pas : recopier
+un PoB existant, autant prendre le PoB directement. La commande `sensitivity`
+mesure le build lui-même, sans rien présupposer de la compétence.
+
+```bash
+npx tsx src/cli.ts sensitivity "Flicker Strike" --class Shadow --ascendancy Assassin \
+  --goal damage --weapon "$(cat ma-griffe.txt)" --pairs
+```
+
+Chaque statistique est **réellement appliquée** au build puis recalculée par
+PoB. Deux choses rendent la mesure utile :
+
+- **Les couples** (`--pairs`). Certaines stats ne valent rien séparément. Un
+  couple n'est retenu que s'il fait mieux que le produit de ses parties.
+- **Deux doses** (`--scale`, 6 par défaut, budget partagé entre les sondes
+  d'un couple). Une dose dit le gain marginal, le budget plein dit ce que
+  l'axe vaut réellement investi. L'écart entre les deux est le verdict :
+  `linéaire`, `à seuil`, `sature`, `sans effet`.
+
+C'est ce qui rattrape le piège du critique. Sur Flicker Strike, la gemme ne
+porte ni le tag crit ni le tag vitesse d'attaque, et le crit mesuré à une dose
+ne rend que **+1,4 %** — du bruit. Investi, le couple chance + multiplicateur
+rend **+49,9 %**, soit une accélération de **×3,0** : l'axe n'existe pas au
+marginal, il n'existe qu'investi. La vitesse d'attaque, elle, ressort
+franchement et **linéairement** (10 %/dose, sans seuil). Deux stats absentes
+des tags de la gemme, deux raisons différentes de les prendre — trouvées par
+la mesure, pas par une règle écrite à la main.
+
+Une section dédiée liste les axes qu'un classement par gain brut enterre :
+*« ce qu'une mesure stat par stat aurait raté »*.
+
 ### Règles non négociables
 
 Le cap de résistances à 75 % n'est pas un bonus mais une **contrainte** : tant
