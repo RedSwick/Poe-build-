@@ -259,5 +259,8 @@
   },
   "config": {
     "using": "Condiciones de combate — {config}. Cualquier cifra de DPS solo tiene sentido respecto a estas."
+  },
+  "relevance": {
+    "profile": "Perfil de búsqueda — prioridad: {keywords}… · despriorizados: {conflicting}"
   }
 }

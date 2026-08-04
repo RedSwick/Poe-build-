@@ -6,6 +6,7 @@ import type {
 } from '../pob/bridge.js';
 import type { Goal } from './scoring-types.js';
 import { score } from './goals.js';
+import { orderByRelevance, type RelevanceProfile } from './relevance.js';
 
 export interface TreeOptimizeOptions {
   /** Points de passif disponibles (hors ascendance). */
@@ -27,6 +28,14 @@ export interface TreeOptimizeOptions {
   minGainPercent: number;
   /** Inclure les masteries parmi les candidats. */
   includeMasteries: boolean;
+  /**
+   * Profil de pertinence déduit de la compétence principale.
+   *
+   * Sert uniquement à ordonner : sur un budget d'évaluations limité, tester
+   * d'abord les nœuds plausibles change ce que l'optimiseur a le temps de
+   * trouver. Rien n'est écarté sur cette base.
+   */
+  profile?: RelevanceProfile;
   onProgress?: (done: number, total: number, label: string) => void;
 }
 
@@ -153,7 +162,12 @@ export async function optimizeTree(
     const remaining = opts.budget - current.pointsUsed;
     const remainingAsc = opts.ascBudget - current.ascPointsUsed;
 
-    const pool = (firstPass ? candidates : lastRanking).filter((c) => {
+    const ordered = firstPass && opts.profile
+      ? orderByRelevance(candidates.map((c) => c.node), opts.profile)
+          .map((n) => candidates.find((c) => c.node === n)!)
+      : (firstPass ? candidates : lastRanking);
+
+    const pool = ordered.filter((c) => {
       if (rejected.has(keyOf(c))) return false;
       // Une mastery déjà choisie ne peut pas recevoir un second effet.
       if (c.mastery && chosenMasteries.some(([n]) => n === c.mastery!.nodeId)) return false;

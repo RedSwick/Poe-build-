@@ -259,5 +259,8 @@
   },
   "config": {
     "using": "Combat conditions — {config}. Any DPS figure only means something relative to these."
+  },
+  "relevance": {
+    "profile": "Search profile — priority: {keywords}… · deprioritised: {conflicting}"
   }
 }

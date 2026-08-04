@@ -33,6 +33,7 @@ import { validateCorpus, DEVIATION_THRESHOLD } from './corpus/validate.js';
 import { computePriors } from './corpus/priors.js';
 import { PobPool } from './pob/pool.js';
 import { DEFAULT_COMBAT, toConfigInputs, parseEnemy, describeCombat, type CombatConfig } from './domain/config.js';
+import { profileFor } from './domain/relevance.js';
 
 /** Options de conditions de combat, communes à plusieurs commandes. */
 function combatFromOpts(opts: any): CombatConfig {
@@ -90,6 +91,7 @@ program
   .option('--max-auras <n>', 'nombre maximum d\'auras', '4')
   .option('--refine', 'repasser sur les supports une fois l\'arbre choisi')
   .option('--use-corpus', 'ordonner les candidats selon le corpus de builds réels')
+  .option('--crit', 'build orienté critique : priorise les nœuds de crit')
   .option('--max-candidates <n>', 'plafond de supports testés (avec --use-corpus)')
   .action(async (skill: string, opts) => {
     const t = createTranslator(opts.locale);
@@ -220,11 +222,20 @@ program
 
         log('');
         log(t('optimize.runningTree', { budget }));
+        // Le profil vient des tags de la gemme, donc du jeu : Volatile Dead
+        // porte `fire` et `spell`, Flicker Strike `attack` et `melee`.
+        const profile = profileFor(mainGem, { crit: Boolean(opts.crit) });
+        log(t('relevance.profile', {
+          keywords: profile.keywords.slice(0, 6).join(', '),
+          conflicting: profile.conflicting.join('/') || '—',
+        }));
+
         tree = await optimizeTree(engine, toPobXml(draftWithSupports), goal, {
           budget,
           maxDist: Number(opts.treeMaxDist),
           batch: Number(opts.treeBatch),
           minGainPercent: Number(opts.treeMinGain),
+          profile,
           onProgress: progress,
         });
         if (!quiet) process.stderr.write('\n');
