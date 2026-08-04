@@ -253,7 +253,9 @@
     "addDone": "\n{added} ajoutés, {updated} mis à jour, {failed} en échec — {total} builds au corpus.",
     "startingPool": "Démarrage de {n} moteurs PoB…",
     "validateDone": "{ok}/{total} builds reproduits fidèlement.",
-    "sample": "Corpus : {n} builds."
+    "sample": "Corpus : {n} builds.",
+    "priorUsed": "Corpus : {n} supports connus pour {skill} (sur {builds} builds) — testés en premier.",
+    "priorMissing": "Corpus : aucun build avec {skill}, ordre par défaut."
   },
   "config": {
     "using": "Conditions de combat — {config}. Tout chiffre de DPS n'a de sens que rapporté à ces conditions."

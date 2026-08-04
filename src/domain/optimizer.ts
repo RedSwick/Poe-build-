@@ -4,6 +4,7 @@ import type { GemIndex } from '../data/gems.js';
 import type { BuildDraft, GemInfo, GemSocket, SupportEvaluation } from './types.js';
 import type { Goal } from './scoring-types.js';
 import { score } from './goals.js';
+import { orderByPrior } from '../corpus/priors.js';
 
 export interface OptimizeOptions {
   /** Nombre de liens du groupe (6 = gemme principale + 5 supports). */
@@ -12,6 +13,20 @@ export interface OptimizeOptions {
   gemQuality: number;
   /** Nombre de candidats reconsidérés à chaque tour après le premier. */
   beamWidth: number;
+  /**
+   * Fréquences observées dans le corpus, pour ce type de compétence.
+   *
+   * Sert uniquement à ordonner les candidats : rien n'est écarté sur cette
+   * base. Un corpus trop petit ne doit pas devenir un plafond de verre.
+   */
+  priorOrder?: Array<{ name: string; count: number }>;
+  /**
+   * Plafond de candidats testés à la première passe.
+   *
+   * C'est ce qui donne sa valeur à l'ordre issu du corpus : sans plafond,
+   * on teste tout et l'ordre ne change que la progression affichée.
+   */
+  maxCandidates?: number;
   onProgress?: (done: number, total: number, label: string) => void;
 }
 
@@ -88,6 +103,12 @@ export async function optimizeSupports(
   const baselineScore = score(baselineStats, goal);
 
   let candidates = gemIndex.compatibleSupports(mainGem);
+  if (opts.priorOrder) {
+    candidates = orderByPrior(candidates, (g) => g.name, opts.priorOrder);
+  }
+  if (opts.maxCandidates && opts.maxCandidates < candidates.length) {
+    candidates = candidates.slice(0, opts.maxCandidates);
+  }
   const chosen: GemInfo[] = [];
   const chosenEvals: SupportEvaluation[] = [];
   let currentScore = baselineScore;

@@ -89,6 +89,8 @@ program
   .option('--auras', 'chercher aussi les meilleures auras')
   .option('--max-auras <n>', 'nombre maximum d\'auras', '4')
   .option('--refine', 'repasser sur les supports une fois l\'arbre choisi')
+  .option('--use-corpus', 'ordonner les candidats selon le corpus de builds réels')
+  .option('--max-candidates <n>', 'plafond de supports testés (avec --use-corpus)')
   .action(async (skill: string, opts) => {
     const t = createTranslator(opts.locale);
     const engine = new PobEngine();
@@ -162,11 +164,32 @@ program
         }
       };
 
+      // Les a priori du corpus n'écartent rien : ils décident seulement de
+      // l'ordre de test. Combinés à un plafond, ils permettent d'explorer
+      // d'abord ce que les vrais builds utilisent.
+      let priorOrder: Array<{ name: string; count: number }> | undefined;
+      if (opts.useCorpus) {
+        const entries = loadCorpus();
+        if (entries.length === 0) {
+          log(t('corpus.empty'));
+        } else {
+          const priors = computePriors(entries);
+          priorOrder = priors.supportsBySkill.get(mainGem.name);
+          log(
+            priorOrder?.length
+              ? t('corpus.priorUsed', { n: priorOrder.length, skill: mainGem.name, builds: priors.sampleSize })
+              : t('corpus.priorMissing', { skill: mainGem.name }),
+          );
+        }
+      }
+
       const result = opts.supports
         ? await optimizeSupports(engine, gems, baseDraft, mainGem, goal, {
             links,
             gemLevel,
             gemQuality,
+            priorOrder,
+            maxCandidates: opts.maxCandidates ? Number(opts.maxCandidates) : undefined,
             onProgress: progress,
           })
         : emptySupportResult();

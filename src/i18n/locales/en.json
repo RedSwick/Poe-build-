@@ -253,7 +253,9 @@
     "addDone": "\n{added} added, {updated} updated, {failed} failed — {total} builds in corpus.",
     "startingPool": "Starting {n} PoB engines…",
     "validateDone": "{ok}/{total} builds reproduced faithfully.",
-    "sample": "Corpus: {n} builds."
+    "sample": "Corpus: {n} builds.",
+    "priorUsed": "Corpus: {n} known supports for {skill} (from {builds} builds) — tested first.",
+    "priorMissing": "Corpus: no build with {skill}, default order."
   },
   "config": {
     "using": "Combat conditions — {config}. Any DPS figure only means something relative to these."
