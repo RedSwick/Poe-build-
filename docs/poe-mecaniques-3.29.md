@@ -331,3 +331,64 @@ Determination, résistances maximales, Mind over Matter).
 de reconstruire un build depuis une gemme nommée. L'import préserve la
 structure réelle — objets, groupes, chaînes de déclenchement — et l'outil
 n'a plus qu'à proposer des améliorations mesurées par-dessus.
+
+---
+
+## 14. Cas d'étude : pourquoi juger un support sur son texte est faux
+
+Build réel mesuré (Soulwrest / Necromancer, niveau 67, 90 passifs).
+
+### Le piège
+
+Le groupe de liens des phantasmes contient **Increased Critical Damage**. Sur
+un build de minions, ce support paraît gâché : les minions critent rarement
+sans investissement dédié, et un optimiseur qui raisonne sur le texte des
+gemmes le remplacerait par du dégât de minion supplémentaire.
+
+Ce serait une erreur. Le casque du build est **Ancient Skull** :
+
+> Minions have **50% increased Critical Strike Chance per Maximum Power
+> Charge you have**
+
+Avec trois charges de pouvoir, les minions gagnent +150 % de chance de
+critique. Le support est donc un choix délibéré et correct.
+
+**Règle à retenir :** la valeur d'un support dépend des objets équipés, pas
+de son libellé. Seule la mesure par le moteur tranche — c'est la raison
+d'être de l'approche retenue dans tout ce projet.
+
+### Deuxième piège : attribuer un effet à la mauvaise source
+
+Le joueur attribuait son gros pool d'ES à une mastery « les increases
+d'armure s'appliquent à l'ES ». Vérification faite, cette mastery ne touche
+que la **vitesse de recharge**, à 20 % de la valeur.
+
+La véritable source est le keystone **Divine Shield** :
+
+> Cannot Recover Energy Shield to above **Armour**
+> 3% of Physical Damage prevented from Hits Recently is Regenerated as
+> Energy Shield per second
+
+L'ES récupérable est plafonné par l'armure : monter l'armure lève le
+plafond. L'effet perçu est le bon, la source ne l'était pas. S'y ajoutent
+**Zealot's Oath** (la régénération de vie va sur l'ES) et trois pièces en
+`increased Armour and Energy Shield`, qui montent les deux ensemble.
+
+### Mesure obtenue
+
+Reconstruction avec quatre pièces d'équipement réelles, sans l'arbre exact
+ni les bijoux : **5 352 de FullDPS**, **3 549 d'EHP**, 1 389 d'ES,
+1 864 d'armure, et une **mana non réservée négative** (-113) faute d'avoir
+reproduit l'efficacité de réservation de l'arbre.
+
+Ce dernier point illustre la contrainte de réservation : le build tourne
+à la limite, et toute aura supplémentaire exigera d'abord de l'efficacité
+de réservation, pas de la mana brute.
+
+### Ce que l'outil doit en tirer
+
+1. Ne jamais écarter un support sans l'avoir mesuré **dans le build complet**,
+   objets compris.
+2. Les synergies objet → support → minion ne sont lisibles que par le moteur.
+3. Un build importé est une meilleure base qu'un build reconstruit : la
+   reconstruction perd l'arbre, les bijoux et les réglages de configuration.
