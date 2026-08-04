@@ -208,6 +208,12 @@ Les emplacements usuels sont détectés seuls (Windows, OneDrive, Steam, Linux,
 macOS, Wine). Le parcours est récursif : les sous-dossiers de rangement de PoB
 sont suivis.
 
+**Sous WSL**, le projet tourne côté Linux alors que Path of Building est
+installé côté Windows : le dossier personnel de l'un ne mène pas à celui de
+l'autre. La détection énumère donc aussi `/mnt/c/Users/*/Documents/…` et
+`/mnt/d/…`, sans quoi elle ne trouverait jamais rien sur la configuration la
+plus courante.
+
 **Le contrôle de version est strict par défaut.** Un export PoB n'a pas de
 champ « ligue », mais il porte la version de l'arbre, qui change à chaque
 extension. Tout build qui n'est pas en `3_29` est écarté et signalé —

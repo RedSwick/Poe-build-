@@ -87,16 +87,35 @@ export function treeVersionOf(xml: string): string | null {
 export function defaultPobBuildDirs(): string[] {
   const home = process.env.HOME ?? process.env.USERPROFILE ?? '';
   const appData = process.env.APPDATA ?? path.join(home, 'AppData', 'Roaming');
-  return [
-    // Windows — installation classique et version Steam.
-    path.join(home, 'Documents', 'Path of Building', 'Builds'),
-    path.join(home, 'OneDrive', 'Documents', 'Path of Building', 'Builds'),
+
+  const under = (base: string) => [
+    path.join(base, 'Documents', 'Path of Building', 'Builds'),
+    path.join(base, 'OneDrive', 'Documents', 'Path of Building', 'Builds'),
+  ];
+
+  const dirs = [
+    ...under(home),
     path.join(appData, 'Path of Building', 'Builds'),
     // Linux / macOS, natif ou via Wine/Proton.
     path.join(home, '.local', 'share', 'Path of Building', 'Builds'),
     path.join(home, 'Library', 'Application Support', 'Path of Building', 'Builds'),
     path.join(home, '.wine', 'drive_c', 'users', process.env.USER ?? '', 'Documents', 'Path of Building', 'Builds'),
   ];
+
+  // Sous WSL, le projet tourne côté Linux mais Path of Building est installé
+  // côté Windows : le dossier personnel de l'un ne mène pas à celui de
+  // l'autre. Sans ce détour, la détection ne trouve jamais rien sur ce qui
+  // est pourtant la configuration la plus courante.
+  for (const drive of ['/mnt/c/Users', '/mnt/d/Users']) {
+    if (!existsSync(drive)) continue;
+    for (const user of readdirSync(drive, { withFileTypes: true })) {
+      if (!user.isDirectory()) continue;
+      if (['Public', 'Default', 'All Users', 'Default User'].includes(user.name)) continue;
+      dirs.push(...under(path.join(drive, user.name)));
+    }
+  }
+
+  return dirs;
 }
 
 /** Parcourt un dossier et rend les fichiers de build qu'il contient. */
