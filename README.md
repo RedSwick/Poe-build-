@@ -337,6 +337,12 @@ aucun texte en dur dans le code.
 
 ---
 
+## Reprendre le projet ailleurs
+
+Le prompt de reprise, à coller au démarrage d'une nouvelle session Claude Code,
+est dans [`docs/prompt-reprise.md`](docs/prompt-reprise.md). Il rassemble le
+brief d'origine, tout ce qui a été demandé depuis, et l'état réel du dépôt.
+
 ## Audit des données 3.29
 
 Un audit complet — ce sur quoi le logiciel s'appuie, ce qui est vérifié, ce
