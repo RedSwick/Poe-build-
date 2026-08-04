@@ -45,6 +45,19 @@ local DEFAULT_STATS = {
 	"Str", "Dex", "Int", "Devotion",
 }
 
+--- Force la prise en compte de tous les groupes dans FullDPS.
+--
+-- FullDPS n'agrège que les groupes marqués `includeInFullDPS`, et les groupes
+-- créés par un objet (compétence déclenchée, minion invoqué par un unique)
+-- naissent à false. Sans ce forçage, un build de minions ou de trigger est
+-- mesuré à zéro — et un optimiseur qui lit zéro optimise à l'aveugle.
+local function includeAllInFullDps()
+	for _, sg in ipairs(build.skillsTab.socketGroupList or {}) do
+		if sg.enabled ~= false then sg.includeInFullDPS = true end
+	end
+	build.buildFlag = true
+end
+
 local function respond(payload)
 	io.stdout:write(SENTINEL .. dkjson.encode(payload) .. "\n")
 	io.stdout:flush()
@@ -81,12 +94,7 @@ local function evaluate(req)
 	-- groupes créés par un objet (Soulwrest et son Summon Phantasm déclenché)
 	-- naissent à false : sans ce forçage, un build dont les dégâts viennent
 	-- d'un unique ou de minions est mesuré à zéro.
-	if req.fullDps then
-		for _, sg in ipairs(build.skillsTab.socketGroupList or {}) do
-			if sg.enabled ~= false then sg.includeInFullDPS = true end
-		end
-		build.buildFlag = true
-	end
+	if req.fullDps ~= false then includeAllInFullDps() end
 
 	-- BuildOutput() force le recalcul ; sans ça les stats peuvent refléter
 	-- l'état précédent quand seules les gemmes ont changé.
@@ -269,7 +277,7 @@ local function treeAlloc(req)
 	-- Propager l'arbre modifié vers les calculs, sinon les stats reflètent
 	-- encore l'arbre chargé depuis le XML.
 	spec:BuildAllDependsAndPaths()
-	build.buildFlag = true
+	includeAllInFullDps()
 	build.calcsTab:BuildOutput()
 
 	local wanted = req.stats
@@ -414,6 +422,7 @@ end
 -- un build dont la compétence principale vient d'un unique est invisible.
 local function skills(req)
 	loadBuildFromXML(req.xml, "pba-skills")
+	includeAllInFullDps()
 	build.calcsTab:BuildOutput()
 
 	local groups = {}
