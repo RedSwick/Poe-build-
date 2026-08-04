@@ -194,6 +194,28 @@ npx tsx src/cli.ts corpus stats "Winter Orb"      # a priori de recherche
 
 Voir `corpus/README.md`.
 
+### Chercher la meilleure ascendance
+
+```bash
+npx tsx src/cli.ts ascendancy "Raise Zombie" --goal damage --tree-budget 40
+npx tsx src/cli.ts ascendancy "Volatile Dead" --goal balanced --class Witch
+```
+
+Les **21 ascendances** des 7 classes sont réellement jouées : personnage
+construit, arbre choisi, résultat mesuré. Rien ne présuppose que les minions
+vont chez la Necromancer — c'est justement ce qu'il faut pouvoir remettre en
+question, et le seul moyen de traiter une combinaison que personne n'a
+essayée. La classe compte autant que l'ascendance : le point de départ décide
+de ce qui est atteignable pour un budget donné.
+
+La liste des ascendances est lue dans l'arbre chargé par PoB, jamais figée
+dans le code — elle reste juste d'une ligue à l'autre.
+
+> ⚠️ **Le budget de points change le classement.** Sur un budget court, une
+> ascendance à bonus plats l'emporte sur une ascendance dont la puissance se
+> compose avec l'investissement. Un classement obtenu à 35 points ne vaut pas
+> pour un personnage niveau 95 équipé.
+
 ### Vitesse de recherche
 
 L'optimiseur d'arbre passe par `calc_batch`, qui s'appuie sur le calculateur
@@ -284,6 +306,18 @@ Langues : **français** (défaut), anglais, espagnol — `src/i18n/locales/*.jso
 aucun texte en dur dans le code.
 
 ---
+
+## Audit des données 3.29
+
+Un audit complet — ce sur quoi le logiciel s'appuie, ce qui est vérifié, ce
+qui ne l'est pas, et ce qui reste à brancher — est dans
+[`docs/audit-3.29.md`](docs/audit-3.29.md).
+
+Résumé : PoB embarque en local **3 164 gemmes, 1 318 uniques, 4 310 mods
+explicites, 1 127 bases, 557 mods de cluster jewel, 834 enchantements,
+105 essences, 268 spectres**, l'arbre 3.29 complet et les identifiants de
+stats de l'API trade. **Il n'y a presque rien à aller chercher dehors** — ce
+qui manque au logiciel n'est pas la donnée, c'est de l'exposer.
 
 ## Vérifications 3.29 (Phase 0)
 

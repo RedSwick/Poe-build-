@@ -260,6 +260,27 @@ export class PobEngine {
   }
 
   /**
+   * Énumère les classes et leurs ascendances depuis l'arbre chargé.
+   *
+   * Les identifiants renvoyés sont ceux qu'attend `ascendClassId` dans le XML
+   * d'un build : les lire dans l'arbre évite de maintenir la liste à la main
+   * à chaque ligue.
+   */
+  async classes(): Promise<{
+    treeVersion: string;
+    classes: Array<{
+      classId: number;
+      name: string;
+      baseStr: number;
+      baseDex: number;
+      baseInt: number;
+      ascendancies: Array<{ id: number; name: string; internalId?: string }>;
+    }>;
+  }> {
+    return this.request({ action: 'classes' });
+  }
+
+  /**
    * Identifie un objet depuis son texte copier-coller.
    *
    * C'est PoB qui lit la base et en déduit le type : maintenir une table des

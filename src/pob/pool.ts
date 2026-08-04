@@ -75,6 +75,10 @@ export class PobPool {
     return this.run((e) => e.uniques(types));
   }
 
+  classes() {
+    return this.run((e) => e.classes());
+  }
+
   itemInfo(raw: string) {
     return this.run((e) => e.itemInfo(raw));
   }

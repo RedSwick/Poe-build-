@@ -36,6 +36,7 @@ import { PobPool } from './pob/pool.js';
 import { DEFAULT_COMBAT, toConfigInputs, parseEnemy, describeCombat, type CombatConfig } from './domain/config.js';
 import { profileFor } from './domain/relevance.js';
 import { analyseSensitivity } from './domain/sensitivity.js';
+import { searchAscendancy } from './domain/ascendancySearch.js';
 
 /** Options de conditions de combat, communes à plusieurs commandes. */
 function combatFromOpts(opts: any): CombatConfig {
@@ -851,6 +852,96 @@ program
       console.log('');
       console.log(`\x1b[2m${t('sensitivity.scaleNote')}\x1b[0m`);
       console.log(`\x1b[2m${t('sensitivity.note')}\x1b[0m`);
+      console.log('');
+    } catch (err) {
+      console.error(t('error.generic', { message: (err as Error).message }));
+      process.exitCode = 1;
+    } finally {
+      pool.stop();
+    }
+  });
+
+program
+  .command('ascendancy')
+  .alias('asc')
+  .description('cherche la meilleure ascendance pour une compétence et un objectif')
+  .argument('<skill>', 'gemme principale')
+  .option('-g, --goal <goal>', 'damage | life | tankiness | balanced', 'balanced')
+  .option('-c, --class <class>', 'restreindre à une classe')
+  .option('-l, --level <n>', 'niveau', '90')
+  .option('--supports <list>', 'supports, séparés par des virgules')
+  .option('--item <textOrFile...>', 'objets à équiper : texte brut ou chemin de fichier')
+  .option('--tree-budget <n>', 'points d\'arbre accordés à chaque candidat', '40')
+  .option('--enemy <kind>', 'none | boss | pinnacle | uber', 'pinnacle')
+  .option('--top <n>', 'nombre de lignes affichées', '21')
+  .option('--locale <locale>')
+  .option('--json', 'sortie JSON')
+  .action(async (skill: string, opts) => {
+    const t = createTranslator(opts.locale);
+    const pool = new PobPool();
+    const quiet = Boolean(opts.json);
+    const log = (s: string) => { if (!quiet) console.error(s); };
+
+    try {
+      await pool.start();
+      const gems = await loadGemIndex(pool as any);
+      const mainGem = gems.find(skill) ?? gems.search(skill)[0];
+      if (!mainGem || mainGem.support) {
+        console.error(t('search.notFound', { query: skill }));
+        process.exitCode = 1;
+        return;
+      }
+
+      const combat = combatFromOpts(opts);
+      const items = await resolveItems(pool, opts.item);
+      const baseDraft: BuildDraft = {
+        className: 'Witch',
+        ascendancy: 'Occultist',
+        level: Number(opts.level),
+        config: toConfigInputs(combat),
+        items: items.map(({ slot, raw }) => ({ slot, raw })),
+        groups: [{
+          slot: 'Body Armour',
+          main: { name: mainGem.name, level: 20, quality: 20 },
+          supports: (opts.supports ? String(opts.supports).split(',') : [])
+            .map((n: string) => ({ name: n.trim(), level: 20, quality: 20 })),
+        }],
+      };
+
+      log(t('ascendancy.running', { skill: mainGem.name, budget: opts.treeBudget }));
+      const res = await searchAscendancy(pool, baseDraft, resolveGoal(opts.goal), {
+        className: opts.class,
+        treeBudget: Number(opts.treeBudget),
+        onProgress: (done, total, label) => {
+          if (!quiet) process.stderr.write(`\r  ${done}/${total}  ${label.padEnd(16)}`);
+          if (!quiet && done === total) process.stderr.write('\n');
+        },
+      });
+
+      if (opts.json) { console.log(JSON.stringify(res, null, 2)); return; }
+
+      const best = res[0];
+      console.log('');
+      console.log(`\x1b[1m\x1b[36m━━━ ${t('ascendancy.title', { skill: mainGem.name, goal: t(`goal.${resolveGoal(opts.goal).kind}`) })} ━━━\x1b[0m`);
+      console.log('');
+      for (const [i, r] of res.slice(0, Number(opts.top)).entries()) {
+        const rel = best.score > 0 ? (r.score / best.score) * 100 : 0;
+        const col = i === 0 ? '\x1b[1m\x1b[32m' : rel >= 90 ? '\x1b[32m' : rel >= 70 ? '\x1b[33m' : '\x1b[2m';
+        console.log(
+          `  ${col}${String(i + 1).padStart(2)}. ${r.candidate.ascendancy.padEnd(14)}\x1b[0m` +
+          `\x1b[2m${r.candidate.className.padEnd(10)}\x1b[0m` +
+          `${col}${rel.toFixed(0).padStart(4)} %\x1b[0m` +
+          `  \x1b[2mDPS ${Math.round(r.dps).toLocaleString('fr-FR').padStart(9)}  EHP ${Math.round(r.ehp).toLocaleString('fr-FR').padStart(7)}\x1b[0m`,
+        );
+        if (r.ascendancyNodes.length > 0) {
+          console.log(`      \x1b[2m${r.ascendancyNodes.join(' · ')}\x1b[0m`);
+        }
+      }
+      console.log('');
+      console.log(`\x1b[1m${t('ascendancy.bestUrl', { name: best.candidate.ascendancy })}\x1b[0m`);
+      console.log(best.url);
+      console.log('');
+      console.log(`\x1b[2m${t('ascendancy.note')}\x1b[0m`);
       console.log('');
     } catch (err) {
       console.error(t('error.generic', { message: (err as Error).message }));

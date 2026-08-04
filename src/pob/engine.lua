@@ -453,6 +453,45 @@ local function uniques(req)
 	return { ok = true, uniques = out }
 end
 
+--- Énumère les classes et leurs ascendances, telles que l'arbre les définit.
+--
+-- Figer cette liste côté TypeScript reviendrait à la maintenir à la main à
+-- chaque ligue. L'arbre chargé par PoB est la seule source qui reste juste :
+-- il porte les identifiants dans l'ordre exact attendu par `ascendClassId`.
+local function classes(req)
+	local tree = main.tree[latestTreeVersion] or (build and build.spec and build.spec.tree)
+	if not tree or not tree.classes then
+		return { ok = false, error = "arbre de passifs indisponible" }
+	end
+
+	local out = {}
+	for classId, class in pairs(tree.classes) do
+		local ascendancies = {}
+		-- `ascendClassId` est l'indice dans cette liste, 1 étant la première
+		-- ascendance ; 0 signifie « aucune ».
+		for ascId, asc in ipairs(class.classes or class.ascendancies or {}) do
+			if asc.name and asc.name ~= "None" then
+				-- `asc.id` garde le nom d'origine de l'ascendance, que GGG ne
+				-- change pas quand elle est renommée en jeu : Raider s'appelle
+				-- Warden depuis son remaniement. C'est `name` qu'il faut
+				-- afficher, sous peine de sortir un nom mort.
+				table.insert(ascendancies, { id = ascId, name = asc.name, internalId = asc.id })
+			end
+		end
+		table.insert(out, {
+			classId = classId,
+			name = class.name,
+			baseStr = class.base_str,
+			baseDex = class.base_dex,
+			baseInt = class.base_int,
+			ascendancies = ascendancies,
+		})
+	end
+
+	table.sort(out, function(a, b) return a.classId < b.classId end)
+	return { ok = true, classes = out, treeVersion = latestTreeVersion }
+end
+
 --- Identifie un objet à partir de son texte brut.
 --
 -- PoB sait déjà lire le format copier-coller du jeu et en déduire la base, le
@@ -599,6 +638,7 @@ local HANDLERS = {
 	tree_candidates = treeCandidates,
 	tree_alloc = treeAlloc,
 	uniques = uniques,
+	classes = classes,
 	item_info = itemInfo,
 	item_mods = itemMods,
 	skills = skills,

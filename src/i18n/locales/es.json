@@ -330,5 +330,11 @@
     "dexterity": "Destreza +100",
     "intelligence": "Inteligencia +100",
     "allAttributes": "Todos los atributos +50"
+  },
+  "ascendancy": {
+    "running": "Buscando la mejor ascendencia para {skill} — {budget} puntos de árbol por candidato…",
+    "title": "Mejor ascendencia para {skill} — objetivo: {goal}",
+    "bestUrl": "Árbol de la mejor opción ({name}):",
+    "note": "Cada ascendencia se juega de verdad: se construye el personaje, se elige su árbol y PoB mide el resultado. El porcentaje es relativo a la mejor opción."
   }
 }
