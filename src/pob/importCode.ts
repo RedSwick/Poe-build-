@@ -39,6 +39,21 @@ export async function decodePobCode(code: string): Promise<string> {
   }
 
   if (!xml) {
+    // Un base64 syntaxiquement valide dont le flux zlib casse signale un
+    // code altéré en transit, pas un mauvais format : un bloc de plusieurs
+    // milliers de caractères sur une seule ligne se corrompt facilement en
+    // passant par un chat, un e-mail ou un terminal. Le distinguer évite
+    // d'envoyer l'utilisateur chercher un problème qui n'existe pas.
+    const looksLikeBase64 = /^[A-Za-z0-9+/]+={0,2}$/.test(cleaned);
+    const header = buf.length >= 2 && buf[0] === 0x78;
+    if (looksLikeBase64 && header) {
+      throw new Error(
+        'Le code est bien formé mais son contenu compressé est corrompu : ' +
+          'des caractères ont été altérés lors de la copie. ' +
+          'Partage plutôt un lien pobb.in ou pastebin — une URL courte ne se ' +
+          'corrompt pas, et cet outil les accepte directement.',
+      );
+    }
     throw new Error(
       'Impossible de décompresser le code de build. ' +
         'Vérifie que tu as bien copié le code depuis « Import/Export Build » de Path of Building.',
