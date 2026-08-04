@@ -254,5 +254,8 @@
     "startingPool": "Iniciando {n} motores PoB…",
     "validateDone": "{ok}/{total} builds reproducidas fielmente.",
     "sample": "Corpus: {n} builds."
+  },
+  "config": {
+    "using": "Condiciones de combate — {config}. Cualquier cifra de DPS solo tiene sentido respecto a estas."
   }
 }

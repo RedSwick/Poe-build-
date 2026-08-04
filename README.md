@@ -158,6 +158,42 @@ Vérifié : la relance fait apparaître `Path of the Savant` et `Deep Wisdom`
 > loin du départ : il faut augmenter `--tree-max-dist` pour que l'outil les
 > atteigne.
 
+### Conditions de combat
+
+Un chiffre de DPS ne veut rien dire sans préciser contre quoi il est calculé.
+Sur un même personnage, passer de « pas de boss » à Uber Pinnacle divise le
+DPS par près de sept :
+
+| Ennemi | DPS mesuré |
+|---|---|
+| aucun / boss standard | 1 816 |
+| **Pinnacle** *(défaut PoB et le nôtre)* | 886 |
+| Uber Pinnacle | 272 |
+
+```bash
+npx tsx src/cli.ts optimize "Winter Orb" --enemy uber --power-charges
+npx tsx src/cli.ts gear "Winter Orb" --enemy boss --frenzy-charges --enemy-cursed
+```
+
+Options : `--enemy none|boss|pinnacle|uber`, `--enemy-level`,
+`--power-charges`, `--frenzy-charges`, `--endurance-charges`,
+`--enemy-cursed`. Le réglage retenu est affiché à chaque exécution.
+
+> **Charges et effets « par charge maximum ».** Activer les charges change le
+> crit du joueur, mais pas les effets libellés *per Maximum Power Charge you
+> have* (Ancient Skull par exemple) : ceux-là comptent le maximum, pas les
+> charges actives. C'est vérifié, pas supposé.
+
+### Corpus de builds réels
+
+```bash
+npx tsx src/cli.ts corpus add -f mes-builds.txt   # un lien par ligne
+npx tsx src/cli.ts corpus validate                # nos calculs vs ceux de l'auteur
+npx tsx src/cli.ts corpus stats "Winter Orb"      # a priori de recherche
+```
+
+Voir `corpus/README.md`.
+
 ### Règles non négociables
 
 Le cap de résistances à 75 % n'est pas un bonus mais une **contrainte** : tant
@@ -242,6 +278,9 @@ src/
   domain/gearOptimizer.ts Choix d'uniques par emplacement, mesuré par le moteur
   domain/auraOptimizer.ts Auras, sous contrainte de réservation de mana
   domain/budget.ts        Paliers de budget adossés aux prix
+  domain/config.ts        Conditions de combat (boss, charges, malédiction)
+  pob/pool.ts             Moteurs PoB en parallèle
+  corpus/                 Builds de référence : validation et a priori
   data/uniques.ts         Index des uniques PoB, variante actuelle sélectionnée
   data/itemMods.ts        Pool de mods et bases d'objets, extraits de PoB
   domain/rareBuilder.ts   Objets rares cibles, priorité au cap de résistances

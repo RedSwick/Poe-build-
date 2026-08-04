@@ -32,6 +32,20 @@ import { addToCorpus, loadCorpus, readSourceList } from './corpus/store.js';
 import { validateCorpus, DEVIATION_THRESHOLD } from './corpus/validate.js';
 import { computePriors } from './corpus/priors.js';
 import { PobPool } from './pob/pool.js';
+import { DEFAULT_COMBAT, toConfigInputs, parseEnemy, describeCombat, type CombatConfig } from './domain/config.js';
+
+/** Options de conditions de combat, communes à plusieurs commandes. */
+function combatFromOpts(opts: any): CombatConfig {
+  return {
+    ...DEFAULT_COMBAT,
+    enemy: parseEnemy(opts.enemy),
+    enemyLevel: opts.enemyLevel ? Number(opts.enemyLevel) : undefined,
+    powerCharges: Boolean(opts.powerCharges),
+    frenzyCharges: Boolean(opts.frenzyCharges),
+    enduranceCharges: Boolean(opts.enduranceCharges),
+    enemyCursed: Boolean(opts.enemyCursed),
+  };
+}
 
 /** Résultat neutre quand l'optimisation des supports est désactivée. */
 function emptySupportResult(): OptimizeResult {
@@ -123,10 +137,14 @@ program
       log('');
       log(t('optimize.running', { skill: mainGem.name, goal: t(`goal.${goal.kind}`) }));
 
+      const combat = combatFromOpts(opts);
+      log(t('config.using', { config: describeCombat(combat) }));
+
       const baseDraft: BuildDraft = {
         className: opts.class,
         ascendancy: opts.ascendancy,
         level,
+        config: toConfigInputs(combat),
         groups: [{ slot: opts.slot, main: { name: mainGem.name, level: gemLevel, quality: gemQuality }, supports: [] }],
       };
 
@@ -408,6 +426,12 @@ program
   .option('--league <name>', 'ligue poe.ninja', DEFAULT_LEAGUE)
   .option('--slots <list>', 'emplacements, séparés par des virgules')
   .option('--candidates <n>', 'uniques testés par emplacement', '40')
+  .option('--enemy <kind>', 'none | boss | pinnacle | uber', 'pinnacle')
+  .option('--enemy-level <n>', 'niveau de l\'ennemi')
+  .option('--power-charges', 'compter les charges de pouvoir')
+  .option('--frenzy-charges', 'compter les charges de frénésie')
+  .option('--endurance-charges', 'compter les charges d\'endurance')
+  .option('--enemy-cursed', 'considérer l\'ennemi comme maudit')
   .option('--locale <locale>')
   .option('--json', 'sortie JSON')
   .action(async (skill: string, opts) => {
@@ -448,11 +472,15 @@ program
       const goal = resolveGoal(opts.goal);
       const level = Number(opts.level);
 
+      const combat = combatFromOpts(opts);
+      log(t('config.using', { config: describeCombat(combat) }));
+
       const base: BuildDraft = {
         className: opts.class,
         ascendancy: opts.ascendancy,
         ascendClassId: 1,
         level,
+        config: toConfigInputs(combat),
         groups: [{ slot: 'Body Armour', main: { name: mainGem.name, level: 20, quality: 20 }, supports: [] }],
       };
 
@@ -516,6 +544,12 @@ program
   .option('--defence <kind>', 'EnergyShield | Armour | Evasion', 'EnergyShield')
   .option('--league <name>', 'ligue pour les liens de trade', DEFAULT_LEAGUE)
   .option('--min-roll <pct>', 'valeur minimale cherchée, en % du max', '70')
+  .option('--enemy <kind>', 'none | boss | pinnacle | uber', 'pinnacle')
+  .option('--enemy-level <n>', 'niveau de l\'ennemi')
+  .option('--power-charges', 'compter les charges de pouvoir')
+  .option('--frenzy-charges', 'compter les charges de frénésie')
+  .option('--endurance-charges', 'compter les charges d\'endurance')
+  .option('--enemy-cursed', 'considérer l\'ennemi comme maudit')
   .option('--locale <locale>')
   .option('--json', 'sortie JSON')
   .action(async (skill: string, opts) => {
@@ -539,11 +573,15 @@ program
       log(t('rare.modsLoaded', { mods: idx.mods.length, bases: idx.bases.length }));
       log(t('rare.running'));
 
+      const combat = combatFromOpts(opts);
+      log(t('config.using', { config: describeCombat(combat) }));
+
       const draft: BuildDraft = {
         className: opts.class,
         ascendancy: opts.ascendancy,
         ascendClassId: 1,
         level: Number(opts.level),
+        config: toConfigInputs(combat),
         groups: [{ slot: 'Body Armour', main: { name: mainGem.name, level: 20, quality: 20 }, supports: [] }],
         items: [],
       };
