@@ -236,11 +236,16 @@ export class PobEngine {
   }
 
   /** Calcule les stats d'un build décrit en XML PoB. */
-  async evaluate(xml: string, stats?: string[]): Promise<EvalResult> {
+  async evaluate(
+    xml: string,
+    stats?: string[],
+    opts: { fullDps?: boolean } = {},
+  ): Promise<EvalResult> {
     const r = await this.request<{ stats: PobStats; warnings: string[] }>({
       action: 'eval',
       xml,
       stats,
+      fullDps: opts.fullDps ?? true,
     });
     return { stats: r.stats ?? {}, warnings: r.warnings ?? [] };
   }

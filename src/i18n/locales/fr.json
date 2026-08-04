@@ -244,6 +244,7 @@
     "title": "Auras",
     "manaLeft": "mana libre {n}",
     "rejected": "Écartées faute de mana : {list}",
-    "note": "Les auras sont le levier défensif le plus fort du jeu, mais leur réservation de mana est une contrainte dure : une aura de trop rend la compétence principale inutilisable."
+    "note": "Les auras sont le levier défensif le plus fort du jeu, mais leur réservation de mana est une contrainte dure : une aura de trop rend la compétence principale inutilisable.",
+    "unblocking": "Relance de l'arbre avec les auras bloquées ({list}) : recherche de réservation…"
   }
 }

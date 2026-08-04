@@ -29,7 +29,7 @@ local dkjson = require("dkjson")
 -- `build.calcsTab.mainOutput` de PoB (vérifiées sur la 3.29).
 local DEFAULT_STATS = {
 	-- Offensif
-	"TotalDPS", "CombinedDPS", "TotalDotDPS", "WithDotDPS", "AverageDamage",
+	"TotalDPS", "CombinedDPS", "FullDPS", "TotalDotDPS", "WithDotDPS", "AverageDamage",
 	"AverageHit", "Speed", "CritChance", "CritMultiplier", "HitChance",
 	"ManaCost", "AreaOfEffectRadius",
 	-- Défensif
@@ -76,6 +76,17 @@ local function evaluate(req)
 	end
 
 	loadBuildFromXML(req.xml, req.name or "pba-eval")
+
+	-- FullDPS n'agrège que les groupes marqués `includeInFullDPS`. Les
+	-- groupes créés par un objet (Soulwrest et son Summon Phantasm déclenché)
+	-- naissent à false : sans ce forçage, un build dont les dégâts viennent
+	-- d'un unique ou de minions est mesuré à zéro.
+	if req.fullDps then
+		for _, sg in ipairs(build.skillsTab.socketGroupList or {}) do
+			if sg.enabled ~= false then sg.includeInFullDPS = true end
+		end
+		build.buildFlag = true
+	end
 
 	-- BuildOutput() force le recalcul ; sans ça les stats peuvent refléter
 	-- l'état précédent quand seules les gemmes ont changé.
@@ -395,6 +406,56 @@ local function itemMods(req)
 	return { ok = true, mods = mods, bases = bases }
 end
 
+--- Liste les compétences réellement actives d'un build, source comprise.
+--
+-- Une compétence peut venir d'une gemme sertie OU d'un objet qui la
+-- déclenche (Soulwrest et son Summon Phantasm, par exemple). PoB range les
+-- secondes dans des groupes portant un champ `source` : sans les exposer,
+-- un build dont la compétence principale vient d'un unique est invisible.
+local function skills(req)
+	loadBuildFromXML(req.xml, "pba-skills")
+	build.calcsTab:BuildOutput()
+
+	local groups = {}
+	for index, sg in ipairs(build.skillsTab.socketGroupList or {}) do
+		local gems = {}
+		for _, gem in ipairs(sg.gemList or {}) do
+			table.insert(gems, {
+				name = gem.nameSpec,
+				level = gem.level,
+				quality = gem.quality,
+				enabled = gem.enabled,
+			})
+		end
+
+		-- `displaySkillList` contient les compétences effectivement produites
+		-- par le groupe, y compris celles octroyées par un objet.
+		local active = {}
+		for _, skill in ipairs(sg.displaySkillList or {}) do
+			local ge = skill.activeEffect and skill.activeEffect.grantedEffect
+			if ge then
+				table.insert(active, {
+					name = ge.name,
+					level = skill.activeEffect.level,
+					minion = skill.minion ~= nil,
+				})
+			end
+		end
+
+		table.insert(groups, {
+			index = index,
+			slot = sg.slot,
+			label = sg.label,
+			source = sg.source,
+			enabled = sg.enabled,
+			gems = gems,
+			activeSkills = active,
+		})
+	end
+
+	return { ok = true, groups = groups, mainGroup = build.mainSocketGroup }
+end
+
 local HANDLERS = {
 	ping = function() return { ok = true, pong = true } end,
 	version = version,
@@ -404,6 +465,7 @@ local HANDLERS = {
 	tree_alloc = treeAlloc,
 	uniques = uniques,
 	item_mods = itemMods,
+	skills = skills,
 }
 
 -- Signale au parent que l'initialisation est terminée et que PoB a fini

@@ -244,6 +244,7 @@
     "title": "Auras",
     "manaLeft": "{n} de maná libre",
     "rejected": "Descartadas por falta de maná: {list}",
-    "note": "Las auras son la palanca defensiva más fuerte del juego, pero su reserva de maná es una restricción dura: un aura de más deja inutilizable la habilidad principal."
+    "note": "Las auras son la palanca defensiva más fuerte del juego, pero su reserva de maná es una restricción dura: un aura de más deja inutilizable la habilidad principal.",
+    "unblocking": "Relanzando el árbol con las auras bloqueadas ({list}): buscando reserva…"
   }
 }

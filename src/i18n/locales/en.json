@@ -244,6 +244,7 @@
     "title": "Auras",
     "manaLeft": "{n} mana left",
     "rejected": "Rejected for lack of mana: {list}",
-    "note": "Auras are the strongest defensive lever in the game, but their mana reservation is a hard constraint: one aura too many makes the main skill unusable."
+    "note": "Auras are the strongest defensive lever in the game, but their mana reservation is a hard constraint: one aura too many makes the main skill unusable.",
+    "unblocking": "Re-running the tree with the blocked auras ({list}): looking for reservation…"
   }
 }

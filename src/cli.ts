@@ -213,6 +213,53 @@ program
         if (!quiet) process.stderr.write('\n');
       }
 
+      // Si des auras ont été rejetées faute de mana, on relance l'arbre AVEC
+      // ces auras posées. Le score pénalise alors la mana insuffisante, si
+      // bien que les nœuds de réservation et de mana deviennent les plus
+      // rentables — l'optimiseur cherche de lui-même à débloquer l'aura, au
+      // lieu de constater qu'elle ne rentre pas.
+      if (opts.auras && auras && auras.rejectedForReservation.length > 0 && tree) {
+        const blocked = auras.rejectedForReservation
+          .map((n) => gems.find(n))
+          .filter((g): g is NonNullable<typeof g> => Boolean(g))
+          .slice(0, 2);
+
+        if (blocked.length > 0) {
+          log('');
+          log(t('aura.unblocking', { list: blocked.map((b) => b.name).join(', ') }));
+          const draftBlocked: BuildDraft = {
+            ...baseDraft,
+            ascendClassId: 1,
+            groups: [
+              {
+                slot: opts.slot,
+                main: { name: mainGem.name, level: gemLevel, quality: gemQuality },
+                supports: result.chosen.map((s) => ({ name: s.gem.name, level: gemLevel, quality: gemQuality })),
+              },
+              ...auras.chosen.map((a, i) => ({
+                slot: (['Helmet', 'Gloves', 'Boots', 'Weapon 2'] as const)[i % 4],
+                main: { name: a.gem.name, level: gemLevel, quality: gemQuality },
+                supports: [],
+              })),
+              ...blocked.map((b) => ({
+                slot: 'Weapon 2',
+                main: { name: b.name, level: gemLevel, quality: gemQuality },
+                supports: [],
+              })),
+            ],
+            mainGroupIndex: 0,
+          };
+          tree = await optimizeTree(engine, toPobXml(draftBlocked), goal, {
+            budget: opts.treeBudget ? Number(opts.treeBudget) : passivePointsForLevel(level),
+            maxDist: Number(opts.treeMaxDist),
+            batch: Number(opts.treeBatch),
+            minGainPercent: Number(opts.treeMinGain),
+            onProgress: progress,
+          });
+          if (!quiet) process.stderr.write('\n');
+        }
+      }
+
       // Seconde passe sur les supports : le meilleur support dépend de
       // l'arbre et des auras en place. Le classement obtenu sur un
       // personnage nu n'est pas forcément celui du build final.

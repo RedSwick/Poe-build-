@@ -44,11 +44,38 @@ function num(stats: PobStatsLike, key: string): number {
   return typeof v === 'number' && Number.isFinite(v) ? v : 0;
 }
 
-/** Dégâts totaux, en incluant les dégâts sur la durée. */
+/**
+ * Dégâts totaux du build.
+ *
+ * `FullDPS` agrège TOUTES les sources : minions, compétences déclenchées,
+ * totems, et compétences octroyées par un objet. C'est la seule mesure
+ * correcte pour un build d'invocation ou de trigger — un Soulwrest dont les
+ * dégâts viennent de phantasmes est mesuré à quasi zéro par `CombinedDPS`,
+ * qui ne regarde que la compétence principale du joueur.
+ */
 export function totalDamage(stats: PobStatsLike): number {
+  const full = num(stats, 'FullDPS');
   const combined = num(stats, 'CombinedDPS');
-  if (combined > 0) return combined;
-  return num(stats, 'TotalDPS') + num(stats, 'TotalDotDPS');
+  const fallback = num(stats, 'TotalDPS') + num(stats, 'TotalDotDPS');
+  return Math.max(full, combined, fallback);
+}
+
+/**
+ * Pénalité de réservation de mana.
+ *
+ * Un build qui réserve trop n'a plus de quoi lancer sa compétence : PoB
+ * calcule la mana non réservée, on s'en sert comme d'une contrainte. C'est
+ * ce qui permet à l'optimiseur d'arbre de comprendre qu'il doit chercher de
+ * l'efficacité de réservation quand une aura ne rentre pas.
+ */
+export function reservationFactor(stats: PobStatsLike): number {
+  const mana = num(stats, 'Mana');
+  if (mana <= 0) return 1;
+  const ratio = num(stats, 'ManaUnreserved') / mana;
+  if (ratio >= 0.15) return 1;
+  // Décroissance douce plutôt que couperet : l'optimiseur a besoin d'un
+  // gradient pour retrouver de la mana, pas d'un mur.
+  return Math.max(0.05, 0.2 + ratio * 5.33);
 }
 
 /** Pool de vie effectif : vie non réservée + bouclier d'énergie + ward. */
@@ -145,5 +172,6 @@ export function score(stats: PobStatsLike, goal: Goal, opts: { enforceResCap?: b
   if (opts.enforceResCap !== false) {
     acc *= resistanceFactor(stats);
   }
+  acc *= reservationFactor(stats);
   return acc;
 }

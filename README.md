@@ -124,6 +124,40 @@ nu et sur un build monté : la seconde passe change effectivement le classement.
 > nœuds de Sovereignty). Sur un personnage nu, l'outil n'en fait passer que
 > deux — et c'est correct : c'est la vraie contrainte du jeu.
 
+### Compétences octroyées par un objet
+
+Certains builds n'ont pas de gemme principale : leur dégât vient d'un unique.
+Soulwrest déclenche « Summon Phantasm niveau 25 » — la compétence vient du
+bâton, pas d'une gemme sertie.
+
+PoB modélise ces compétences dans un groupe de liens portant un champ
+`source` (`Item:1:Soulwrest, Ezomyte Staff`), et l'outil les expose désormais.
+Vérifié : les gemmes de support serties agissent bien dessus (Minion Damage
+fait passer le build de 184 à 281 de dégâts).
+
+> **Correction importante :** ces builds étaient mesurés à **quasi zéro**
+> auparavant. `CombinedDPS` ne regarde que la compétence du joueur — un build
+> de minions ou de trigger y apparaît à 8 de DPS. Le score utilise maintenant
+> **`FullDPS`**, qui agrège minions, compétences déclenchées et totems, avec
+> l'option `includeInFullDPS` forcée sur tous les groupes actifs (les groupes
+> créés par un objet naissent à `false`).
+
+### Réservation de mana et déblocage des auras
+
+Quand des auras sont écartées faute de mana, l'outil **relance l'arbre avec
+ces auras posées**. Le score pénalise alors la mana insuffisante, si bien que
+les nœuds de mana et de réservation deviennent les plus rentables :
+l'optimiseur cherche de lui-même à débloquer l'aura au lieu de constater
+qu'elle ne rentre pas.
+
+Vérifié : la relance fait apparaître `Path of the Savant` et `Deep Wisdom`
+(+20 mana) qui n'étaient pas retenus auparavant.
+
+> Débloquer Determination ou Grace demande de l'**efficacité de réservation**
+> (Sovereignty, Enlighten), pas seulement de la mana brute. Ces nœuds sont
+> loin du départ : il faut augmenter `--tree-max-dist` pour que l'outil les
+> atteigne.
+
 ### Règles non négociables
 
 Le cap de résistances à 75 % n'est pas un bonus mais une **contrainte** : tant
