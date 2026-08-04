@@ -70,12 +70,19 @@ export function totalDamage(stats: PobStatsLike): number {
  */
 export function reservationFactor(stats: PobStatsLike): number {
   const mana = num(stats, 'Mana');
+  // Mana nulle : le personnage ne joue pas sur la mana (Blood Magic). Il n'y
+  // a pas de problème de réservation à signaler, mais pas de bonus non plus.
   if (mana <= 0) return 1;
+
   const ratio = num(stats, 'ManaUnreserved') / mana;
   if (ratio >= 0.15) return 1;
-  // Décroissance douce plutôt que couperet : l'optimiseur a besoin d'un
-  // gradient pour retrouver de la mana, pas d'un mur.
-  return Math.max(0.05, 0.2 + ratio * 5.33);
+
+  // La pénalité doit orienter la recherche sans la dominer. Une version
+  // trop sévère faisait passer Blood Magic pour un gain de 1374 % : en
+  // mettant la mana à zéro il échappait à la pénalité, alors qu'il
+  // n'apporte aucun dégât et divise l'EHP par sept. Le plancher garde donc
+  // le signal comparable aux autres composantes du score.
+  return Math.max(0.55, 0.7 + ratio * 2);
 }
 
 /** Pool de vie effectif : vie non réservée + bouclier d'énergie + ward. */
