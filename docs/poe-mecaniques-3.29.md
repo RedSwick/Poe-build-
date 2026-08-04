@@ -272,3 +272,62 @@ Changements 3.29 :
    sans blocage proxy — seule source faisant autorité pour les chiffres.
 2. Confirmer les cibles de chaos res pour 3.29.
 3. Vérifier en jeu le cumul exact du +10 % de qualité de socket.
+
+---
+
+## 13. Builds multi-groupes et chaînes de déclenchement
+
+Cas mesuré : Soulwrest / Necromancer, chaîne
+`Cyclone (canalisé) → Cast while Channelling → Desecrate → cadavres →
+déclencheur du bâton → Phantasmes → projectiles physiques`,
+plus Stone Golem, Carrion Golem, Animate Guardian et l'aura Pride.
+
+### Ce que PoB modélise correctement
+
+Chargé tel quel, le moteur reconnaît **7 groupes de liens** et résout la
+chaîne sans aide :
+
+| Groupe | Emplacement | Source | Compétence active |
+|---|---|---|---|
+| 2 | Body Armour | gemme | Cyclone **et Desecrate** (la chaîne CWC est résolue) |
+| 3 | Helmet | gemme | Summon Stone Golem `[minion]` |
+| 4 | Gloves | gemme | Summon Carrion Golem `[minion]` |
+| 5 | Boots | gemme | Animate Guardian `[minion]` |
+| 6 | — | gemme | Pride |
+| 7 | Weapon 1 | **ITEM** | Triggered Summon Phantasm `[minion]` |
+
+Le moteur n'est donc pas le facteur limitant : il sait faire.
+
+### Ce que l'outil ne sait pas exprimer
+
+En sérialisant les supports de minion dans un groupe séparé du groupe créé
+par l'objet, PoB résout ce groupe vers une compétence parasite
+(`Signal Prey`, octroyée par le support Predator) au lieu de simplement
+soutenir les phantasmes. Le build calculé n'est donc pas celui joué.
+
+Conséquences, toutes non résolues à ce jour :
+
+1. **Pas de moyen de désigner la compétence d'un objet comme compétence
+   principale.** `optimize` part toujours d'une gemme nommée.
+2. **Pas de moyen de rattacher des supports au groupe d'un objet.** Il
+   faudrait socketer les gemmes dans l'objet, pas créer un groupe voisin.
+3. **Un seul groupe optimisé.** Les golems, l'Animate Guardian, les auras et
+   la chaîne de déclenchement ne sont jamais proposés ni ajustés.
+4. **Les règles de scaling des minions ne sont pas appliquées** : l'outil
+   peut proposer des supports qui n'affectent pas les minions (§9).
+
+### Ordre de grandeur observé
+
+Sur ce montage, sans arbre alloué, sans jewels et sans équipement orienté
+minion : **1969 de FullDPS** et **896 d'EHP**. Un build de fin de partie se
+compte en millions de DPS et en centaines de milliers d'EHP.
+
+L'écart ne vient pas du moteur mais de tout ce que l'outil ne pose pas
+encore : points d'arbre en nombre suffisant et clusters éloignés, ascendancy
+complète, jewels, niveaux de gemme, et couches défensives (armure massive,
+Determination, résistances maximales, Mind over Matter).
+
+**Conclusion : la voie viable est de partir d'un build importé** plutôt que
+de reconstruire un build depuis une gemme nommée. L'import préserve la
+structure réelle — objets, groupes, chaînes de déclenchement — et l'outil
+n'a plus qu'à proposer des améliorations mesurées par-dessus.
