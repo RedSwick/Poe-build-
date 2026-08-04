@@ -103,6 +103,27 @@ alors que PoB embarque la même donnée en local, déjà en 3.29 et sous licence
 > modélisée. L'outil décrit l'objet à *chercher* ou à *viser*, en n'utilisant
 > que des affixes pouvant réellement sortir sur cette base à ce niveau d'objet.
 
+### Auras et co-optimisation
+
+```bash
+npx tsx src/cli.ts optimize "Winter Orb" --goal tankiness --auras --refine
+```
+
+`--auras` cherche les meilleures auras (Determination, Grace, Discipline,
+Purity…) dans leurs propres groupes de liens, en respectant la **réservation
+de mana** : PoB la modélise, et une aura de trop rend la compétence principale
+inutilisable. L'outil affiche les auras écartées pour cette raison.
+
+`--refine` relance une passe sur les gemmes de support **une fois l'arbre et
+les auras en place**. Le meilleur support n'est pas le même sur un personnage
+nu et sur un build monté : la seconde passe change effectivement le classement.
+
+> **Pourquoi les gros builds atteignent 200-400k d'EHP :** ils font tourner
+> Determination + Grace + Defiance Banner simultanément, ce qui n'est possible
+> qu'avec beaucoup d'efficacité de réservation (Enlighten, masteries de mana,
+> nœuds de Sovereignty). Sur un personnage nu, l'outil n'en fait passer que
+> deux — et c'est correct : c'est la vraie contrainte du jeu.
+
 ### Règles non négociables
 
 Le cap de résistances à 75 % n'est pas un bonus mais une **contrainte** : tant
@@ -185,6 +206,7 @@ src/
   domain/treeOptimizer.ts Arbre de passifs et masteries, mesurés par le moteur
   domain/audit.ts         Règles dures : cap de résistances, overcap, pools
   domain/gearOptimizer.ts Choix d'uniques par emplacement, mesuré par le moteur
+  domain/auraOptimizer.ts Auras, sous contrainte de réservation de mana
   domain/budget.ts        Paliers de budget adossés aux prix
   data/uniques.ts         Index des uniques PoB, variante actuelle sélectionnée
   data/itemMods.ts        Pool de mods et bases d'objets, extraits de PoB

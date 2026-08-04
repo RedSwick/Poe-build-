@@ -28,7 +28,8 @@
     "running": "Optimizing supports for {skill} (goal: {goal})…",
     "progress": "{label} — {done}/{total} candidates evaluated",
     "evaluations": "{count} evaluations performed by the engine",
-    "runningTree": "Optimising the passive tree ({budget} points available)…"
+    "runningTree": "Optimising the passive tree ({budget} points available)…",
+    "refining": "Second pass on supports, with the tree and auras in place…"
   },
   "goal": {
     "damage": "maximum damage",
@@ -53,7 +54,7 @@
     "noGain": "No additional support improves this build for this goal.",
     "warning": "Engine warning: {message}",
     "bareBuildNote": "This calculation is for a character with no gear and no allocated passive tree: absolute values are low, only the differences between supports are meaningful.",
-    "goalNoDefensiveEffect": "Note: for this goal, no support gem changes your defences — a skill link only affects damage. The ranking above therefore falls back to DPS. Life and survivability come from the passive tree and gear, which this tool does not optimise yet.",
+    "goalNoDefensiveEffect": "Note: for this goal, no support gem changes your defences — a skill link only affects damage. The ranking above therefore falls back to DPS. Your survivability comes from the tree, auras and gear, handled separately below.",
     "tree": "Passive tree",
     "treePoints": "{used} passive points used out of {budget} — {asc} ascendancy points",
     "treeCost": "{n} pts",
@@ -237,5 +238,12 @@
     "rollNote": "Values shown are top-of-range; trade links search from {ratio}% of that value.",
     "loadingMods": "Loading the mod pool…",
     "modsLoaded": "{mods} mods and {bases} bases loaded from Path of Building"
+  },
+  "aura": {
+    "running": "Searching for the best auras…",
+    "title": "Auras",
+    "manaLeft": "{n} mana left",
+    "rejected": "Rejected for lack of mana: {list}",
+    "note": "Auras are the strongest defensive lever in the game, but their mana reservation is a hard constraint: one aura too many makes the main skill unusable."
   }
 }

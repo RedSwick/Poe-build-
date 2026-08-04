@@ -28,7 +28,8 @@
     "running": "Optimisation des supports pour {skill} (objectif : {goal})…",
     "progress": "{label} — {done}/{total} candidats évalués",
     "evaluations": "{count} évaluations effectuées par le moteur",
-    "runningTree": "Optimisation de l'arbre de passifs ({budget} points disponibles)…"
+    "runningTree": "Optimisation de l'arbre de passifs ({budget} points disponibles)…",
+    "refining": "Seconde passe sur les supports, avec l'arbre et les auras en place…"
   },
   "goal": {
     "damage": "dégâts maximum",
@@ -53,7 +54,7 @@
     "noGain": "Aucun support supplémentaire n'améliore ce build pour cet objectif.",
     "warning": "Avertissement du moteur : {message}",
     "bareBuildNote": "Ce calcul porte sur un personnage sans équipement ni arbre de passifs alloué : les valeurs absolues sont faibles, seuls les écarts entre supports sont significatifs.",
-    "goalNoDefensiveEffect": "Note : sur cet objectif, aucune gemme de support ne modifie tes défenses — un lien de compétence n'agit que sur les dégâts. Le classement ci-dessus retombe donc sur le DPS. La vie et la survie se jouent sur l'arbre de passifs et l'équipement, pas encore optimisés par cet outil.",
+    "goalNoDefensiveEffect": "Note : sur cet objectif, aucune gemme de support ne modifie tes défenses — un lien de compétence n'agit que sur les dégâts. Le classement ci-dessus retombe donc sur le DPS. Ta survie vient de l'arbre, des auras et de l'équipement, traités séparément plus bas.",
     "tree": "Arbre de passifs",
     "treePoints": "{used} points de passif utilisés sur {budget} — {asc} points d'ascendance",
     "treeCost": "{n} pts",
@@ -237,5 +238,12 @@
     "rollNote": "Les valeurs affichées sont les hauts de plage ; les liens de trade cherchent à partir de {ratio} % de cette valeur.",
     "loadingMods": "Chargement du pool de mods…",
     "modsLoaded": "{mods} mods et {bases} bases chargés depuis Path of Building"
+  },
+  "aura": {
+    "running": "Recherche des meilleures auras…",
+    "title": "Auras",
+    "manaLeft": "mana libre {n}",
+    "rejected": "Écartées faute de mana : {list}",
+    "note": "Les auras sont le levier défensif le plus fort du jeu, mais leur réservation de mana est une contrainte dure : une aura de trop rend la compétence principale inutilisable."
   }
 }

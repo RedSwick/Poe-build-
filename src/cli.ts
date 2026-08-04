@@ -4,6 +4,7 @@ import { PobEngine } from './pob/bridge.js';
 import { loadGemIndex } from './data/gems.js';
 import { resolveGoal } from './domain/goals.js';
 import { optimizeSupports, type OptimizeResult } from './domain/optimizer.js';
+import { optimizeAuras, type AuraOptimizeResult } from './domain/auraOptimizer.js';
 import {
   optimizeTree,
   passivePointsForLevel,
@@ -67,6 +68,9 @@ program
   .option('--tree-max-dist <n>', 'distance max d\'un notable candidat', '12')
   .option('--tree-batch <n>', 'notables alloués par passe', '3')
   .option('--tree-min-gain <pct>', 'gain minimum pour qu\'un notable soit pris', '0.5')
+  .option('--auras', 'chercher aussi les meilleures auras')
+  .option('--max-auras <n>', 'nombre maximum d\'auras', '4')
+  .option('--refine', 'repasser sur les supports une fois l\'arbre choisi')
   .action(async (skill: string, opts) => {
     const t = createTranslator(opts.locale);
     const engine = new PobEngine();
@@ -181,12 +185,68 @@ program
         if (!quiet) process.stderr.write('\n');
       }
 
+      // Les auras se logent dans leurs propres groupes de liens, avec
+      // l'arbre déjà alloué : leur coût en réservation dépend de la mana
+      // que l'arbre a apportée.
+      let auras: AuraOptimizeResult | undefined;
+      if (opts.auras) {
+        const draftForAuras: BuildDraft = {
+          ...baseDraft,
+          ascendClassId: 1,
+          treeNodes: tree?.allocated,
+          groups: [
+            {
+              slot: opts.slot,
+              main: { name: mainGem.name, level: gemLevel, quality: gemQuality },
+              supports: result.chosen.map((s) => ({ name: s.gem.name, level: gemLevel, quality: gemQuality })),
+            },
+          ],
+        };
+        log('');
+        log(t('aura.running'));
+        auras = await optimizeAuras(engine, gems, draftForAuras, goal, {
+          maxAuras: Number(opts.maxAuras),
+          gemLevel,
+          gemQuality,
+          onProgress: progress,
+        });
+        if (!quiet) process.stderr.write('\n');
+      }
+
+      // Seconde passe sur les supports : le meilleur support dépend de
+      // l'arbre et des auras en place. Le classement obtenu sur un
+      // personnage nu n'est pas forcément celui du build final.
+      let refined: OptimizeResult | undefined;
+      if (opts.refine && opts.supports && tree) {
+        const draftRefine: BuildDraft = {
+          ...baseDraft,
+          ascendClassId: 1,
+          treeNodes: tree.allocated,
+          groups: [
+            { slot: opts.slot, main: { name: mainGem.name, level: gemLevel, quality: gemQuality }, supports: [] },
+            ...(auras?.chosen ?? []).map((a, i) => ({
+              slot: (['Helmet', 'Gloves', 'Boots', 'Weapon 2'] as const)[i % 4],
+              main: { name: a.gem.name, level: gemLevel, quality: gemQuality },
+              supports: [],
+            })),
+          ],
+          mainGroupIndex: 0,
+        };
+        log('');
+        log(t('optimize.refining'));
+        refined = await optimizeSupports(engine, gems, draftRefine, mainGem, goal, {
+          links, gemLevel, gemQuality, onProgress: progress,
+        });
+        if (!quiet) process.stderr.write('\n');
+      }
+
       const reportInput = {
         mainGem,
         slot: opts.slot,
         links,
         goal,
-        result,
+        result: refined ?? result,
+        auras,
         tree,
         gemLevel,
         gemQuality,

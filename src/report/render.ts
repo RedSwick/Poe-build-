@@ -7,6 +7,7 @@ import {
   passivePointsForLevel,
   type TreeOptimizeResult,
 } from '../domain/treeOptimizer.js';
+import type { AuraOptimizeResult } from '../domain/auraOptimizer.js';
 
 const B = '\x1b[1m';
 const DIM = '\x1b[2m';
@@ -38,6 +39,7 @@ export interface ReportInput {
   goal: Goal;
   result: OptimizeResult;
   tree?: TreeOptimizeResult;
+  auras?: AuraOptimizeResult;
   gemLevel: number;
   gemQuality: number;
   className: string;
@@ -103,7 +105,7 @@ export function renderReport(t: TFunction, input: ReportInput): string {
   // étape d'optimisation laisserait le tableau vide.
   const hasSupportRun = Object.keys(result.baselineStats).length > 0;
   const before = hasSupportRun ? result.baselineStats : (input.tree?.baselineStats ?? {});
-  const after = input.tree?.finalStats ?? result.finalStats;
+  const after = input.auras?.finalStats ?? input.tree?.finalStats ?? result.finalStats;
 
   const label = (k: string) => t(`stat.${k}`);
   const width = Math.max(...keys.map((k) => label(k).length)) + 2;
@@ -127,6 +129,29 @@ export function renderReport(t: TFunction, input: ReportInput): string {
     );
   }
   line();
+
+  // --- Auras ------------------------------------------------------------
+  if (input.auras) {
+    const a = input.auras;
+    line(`${B}${t('aura.title')}${R}`);
+    line();
+    for (const c of a.chosen) {
+      line(
+        `  ${B}◉ ${c.gem.name}${R}  ${GREEN}+${c.gainPercent.toFixed(1)} %${R}  ` +
+          `${DIM}${t('aura.manaLeft', { n: Math.round(c.manaLeft) })}${R}`,
+      );
+    }
+    if (a.chosen.length === 0) line(`  ${DIM}${t('report.noGain')}${R}`);
+    if (a.rejectedForReservation.length > 0) {
+      line();
+      line(
+        `  ${YELLOW}${t('aura.rejected', { list: a.rejectedForReservation.slice(0, 6).join(', ') })}${R}`,
+      );
+    }
+    line();
+    line(`  ${DIM}${t('aura.note')}${R}`);
+    line();
+  }
 
   // --- Arbre de passifs -------------------------------------------------
   if (input.tree) {
@@ -185,7 +210,8 @@ export function renderReport(t: TFunction, input: ReportInput): string {
     line();
   }
 
-  const totalEvals = result.evaluations + (input.tree?.evaluations ?? 0);
+  const totalEvals =
+    result.evaluations + (input.tree?.evaluations ?? 0) + (input.auras?.evaluations ?? 0);
   line(`${DIM}${t('optimize.evaluations', { count: totalEvals })}${R}`);
   // La mise en garde « personnage nu » ne vaut plus dès que l'arbre est
   // alloué : elle deviendrait fausse et minimiserait à tort les résultats.
