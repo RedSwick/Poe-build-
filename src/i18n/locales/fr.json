@@ -226,5 +226,16 @@
     "comfortable": "confortable",
     "optimised": "optimisé",
     "mirror": "mirror tier"
+  },
+  "rare": {
+    "title": "Objets rares à viser",
+    "running": "Génération des objets rares (cap des résistances en priorité)…",
+    "slot": "{slot} — {base}",
+    "tradeLink": "Chercher sur le trade :",
+    "affixes": "Affixes visés",
+    "notASimulator": "Ce n'est pas un simulateur de craft : aucune probabilité ni currency n'est modélisée. C'est la description de l'objet à CHERCHER ou à VISER, en n'utilisant que des affixes pouvant réellement sortir sur cette base à ce niveau d'objet.",
+    "rollNote": "Les valeurs affichées sont les hauts de plage ; les liens de trade cherchent à partir de {ratio} % de cette valeur.",
+    "loadingMods": "Chargement du pool de mods…",
+    "modsLoaded": "{mods} mods et {bases} bases chargés depuis Path of Building"
   }
 }

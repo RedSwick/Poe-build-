@@ -74,6 +74,35 @@ et l'arbre. 1322 uniques sont chargés depuis PoB.
 > mods choisis, que l'outil ne sait pas encore générer. La recherche est aussi
 > partielle : seuls les N premiers uniques par emplacement sont testés.
 
+### Objets rares et liens de trade
+
+```bash
+npx tsx src/cli.ts rares "Winter Orb" --defence EnergyShield
+```
+
+Génère, emplacement par emplacement, l'objet rare à chercher pour **capper les
+résistances**, et sort un **lien de recherche trade cliquable** pour chacun.
+
+Résultat mesuré sur Winter Orb / Occultist, en partant d'un personnage nu :
+résistances **-60/-60/-60 → 75/75/75**, chaos **-60 → +10**, l'audit passe en
+`resCapped`.
+
+Le pool de mods vient de PoB (4487 mods, 1106 bases) : préfixe/suffixe, niveau
+d'objet requis, groupe d'exclusion, poids d'apparition par catégorie de base, et
+surtout les `tradeHashes` — les identifiants de stats de l'API trade officielle.
+**Aucun site de craft n'est scrapé** : Craft of Exile n'a pas d'API publique,
+alors que PoB embarque la même donnée en local, déjà en 3.29 et sous licence MIT.
+
+> **Les liens de trade sont des URL de site, pas des appels d'API.** Ils ouvrent
+> la recherche pré-remplie dans ton navigateur, où tu es déjà connecté : ni
+> POESESSID, ni Cloudflare, ni limite de débit. Leur structure n'a pas pu être
+> testée en direct (pathofexile.com est bloqué depuis l'environnement de
+> développement), mais les identifiants de stats viennent directement de PoB.
+
+> **Ce n'est pas un simulateur de craft.** Aucune probabilité ni currency n'est
+> modélisée. L'outil décrit l'objet à *chercher* ou à *viser*, en n'utilisant
+> que des affixes pouvant réellement sortir sur cette base à ce niveau d'objet.
+
 ### Règles non négociables
 
 Le cap de résistances à 75 % n'est pas un bonus mais une **contrainte** : tant
@@ -158,6 +187,9 @@ src/
   domain/gearOptimizer.ts Choix d'uniques par emplacement, mesuré par le moteur
   domain/budget.ts        Paliers de budget adossés aux prix
   data/uniques.ts         Index des uniques PoB, variante actuelle sélectionnée
+  data/itemMods.ts        Pool de mods et bases d'objets, extraits de PoB
+  domain/rareBuilder.ts   Objets rares cibles, priorité au cap de résistances
+  trade/searchLink.ts     Liens de recherche vers le site de trade officiel
   trade/ninja.ts          Client poe.ninja (prix) — non vérifié, voir plus haut
   pob/importCode.ts       Décodage d'un code PoB / lien pastebin / pobb.in
   server/                 Interface web (SSE) + fichiers statiques
@@ -221,19 +253,21 @@ le code métier, et que les briques réutilisables de l'écosystème PoE
   est là, la vérification reste à faire.
 - **Pas de recherche sur le trade officiel.** L'API demande un POESESSID et
   passe derrière Cloudflare ; rien n'est encore implémenté de ce côté.
-- **Pas de rares ni de craft.** L'optimiseur ne propose que des uniques, ce qui
-  ne suffit pas à capper des résistances dans un vrai build.
+- **L'optimiseur d'équipement ne propose que des uniques.** Les rares sont
+  générés séparément (`rares`), pas encore intégrés à la boucle d'optimisation.
+- **Pas de simulation de craft** : ni probabilités, ni coût en currency, ni
+  ordre des étapes.
+- **Liens de trade non testés en direct** (pathofexile.com bloqué ici).
 - La sélection des supports est **gloutonne** : elle mesure chaque candidat mais
   n'explore pas toutes les combinaisons.
 
 ## Suite
 
-1. Vérifier le client poe.ninja hors environnement bloqué
-2. Objets rares : génération de mods cibles pour capper les résistances
-3. Recherche sur le trade officiel (POESESSID, Cloudflare, rate limits)
-4. Jewels et cluster jewels
-5. Suggestions de craft (currency, base, ordre)
-6. Couche IA (langage naturel → requête structurée)
+1. Vérifier poe.ninja et les liens de trade hors environnement bloqué
+2. Intégrer les rares à la boucle d'optimisation, aux côtés des uniques
+3. Jewels et cluster jewels
+4. Suggestions de craft (currency, base, ordre des étapes)
+5. Couche IA (langage naturel → requête structurée)
 
 ## Licence
 

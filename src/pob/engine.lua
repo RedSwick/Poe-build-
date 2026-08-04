@@ -330,6 +330,71 @@ local function uniques(req)
 	return { ok = true, uniques = out }
 end
 
+--- Exporte le pool de mods explicites et les bases d'objets.
+--
+-- PoB embarque la base de mods complète du jeu : préfixes, suffixes, niveau
+-- d'objet requis, groupe d'exclusion, poids d'apparition par catégorie de
+-- base, et surtout les `tradeHashes`, identifiants de stats de l'API trade
+-- officielle. On ne scrape donc aucun site de craft.
+local function itemMods(req)
+	local mods = {}
+	for modId, mod in pairs(data.itemMods.Item or {}) do
+		-- Seuls les mods portant un type (Prefix/Suffix) peuvent apparaître
+		-- sur un objet rare classique.
+		if mod.type == "Prefix" or mod.type == "Suffix" then
+			local stats = {}
+			for _, line in ipairs(mod) do
+				if type(line) == "string" then table.insert(stats, line) end
+			end
+
+			-- weightKey/weightVal sont deux listes parallèles : une catégorie
+			-- de base et son poids d'apparition. Un poids nul interdit le mod.
+			local weights = {}
+			for i, key in ipairs(mod.weightKey or {}) do
+				local val = (mod.weightVal or {})[i] or 0
+				if val > 0 then weights[key] = val end
+			end
+
+			local hashes = {}
+			for hash in pairs(mod.tradeHashes or {}) do
+				table.insert(hashes, hash)
+			end
+
+			if #stats > 0 then
+				table.insert(mods, {
+					id = modId,
+					type = mod.type,
+					affix = mod.affix,
+					stats = stats,
+					level = mod.level or 1,
+					group = mod.group,
+					weights = weights,
+					tags = mod.modTags or {},
+					tradeHashes = hashes,
+				})
+			end
+		end
+	end
+
+	local bases = {}
+	for name, base in pairs(data.itemBases) do
+		local tags = {}
+		for tag, on in pairs(base.tags or {}) do
+			if on then table.insert(tags, tag) end
+		end
+		table.insert(bases, {
+			name = name,
+			type = base.type,
+			subType = base.subType,
+			tags = tags,
+			reqLevel = base.req and base.req.level or 1,
+			socketLimit = base.socketLimit,
+		})
+	end
+
+	return { ok = true, mods = mods, bases = bases }
+end
+
 local HANDLERS = {
 	ping = function() return { ok = true, pong = true } end,
 	version = version,
@@ -338,6 +403,7 @@ local HANDLERS = {
 	tree_candidates = treeCandidates,
 	tree_alloc = treeAlloc,
 	uniques = uniques,
+	item_mods = itemMods,
 }
 
 -- Signale au parent que l'initialisation est terminée et que PoB a fini

@@ -226,5 +226,16 @@
     "comfortable": "cómodo",
     "optimised": "optimizado",
     "mirror": "mirror tier"
+  },
+  "rare": {
+    "title": "Objetos raros a conseguir",
+    "running": "Generando objetos raros (tope de resistencias primero)…",
+    "slot": "{slot} — {base}",
+    "tradeLink": "Buscar en el trade:",
+    "affixes": "Afijos objetivo",
+    "notASimulator": "No es un simulador de crafteo: no se modelan probabilidades ni currency. Describe el objeto a BUSCAR o a APUNTAR, usando solo afijos que pueden salir realmente en esta base a este nivel de objeto.",
+    "rollNote": "Los valores mostrados son el tope del rango; los enlaces de trade buscan a partir del {ratio} % de ese valor.",
+    "loadingMods": "Cargando el conjunto de mods…",
+    "modsLoaded": "{mods} mods y {bases} bases cargados desde Path of Building"
   }
 }

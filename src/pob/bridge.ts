@@ -225,6 +225,11 @@ export class PobEngine {
     return this.request({ action: 'uniques', types });
   }
 
+  /** Exporte le pool de mods explicites et les bases d'objets. */
+  async itemMods(): Promise<{ mods: any[]; bases: any[] }> {
+    return this.request({ action: 'item_mods' });
+  }
+
   /** Exporte l'index des gemmes tel que chargé par PoB. */
   async gems<T>(): Promise<{ gems: T[] }> {
     return this.request({ action: 'gems' });

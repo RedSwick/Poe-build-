@@ -21,6 +21,12 @@ import { optimizeGear } from './domain/gearOptimizer.js';
 import { createPriceFilter, type BudgetTier } from './domain/budget.js';
 import { loadPriceIndex, DEFAULT_LEAGUE, type PriceIndex } from './trade/ninja.js';
 import { renderGear } from './report/renderGear.js';
+import { loadModIndex } from './data/itemMods.js';
+import {
+  needsFromStats, buildRareTarget, pickBase, SLOT_TO_BASE_TYPE,
+} from './domain/rareBuilder.js';
+import { buildTradeSearchUrl } from './trade/searchLink.js';
+import { resistanceStatus } from './domain/goals.js';
 
 /** Résultat neutre quand l'optimisation des supports est désactivée. */
 function emptySupportResult(): OptimizeResult {
@@ -380,6 +386,118 @@ program
         testedPerSlot: Number(opts.candidates),
         findings,
       }));
+    } catch (err) {
+      console.error(t('error.generic', { message: (err as Error).message }));
+      process.exitCode = 1;
+    } finally {
+      engine.stop();
+    }
+  });
+
+program
+  .command('rares')
+  .description('génère les objets rares à viser pour capper les résistances')
+  .argument('<skill>', 'gemme principale')
+  .option('-c, --class <class>', 'classe', 'Witch')
+  .option('-a, --ascendancy <asc>', 'ascendance', 'Occultist')
+  .option('-l, --level <n>', 'niveau', '90')
+  .option('--item-level <n>', 'niveau des objets visés', '86')
+  .option('--defence <kind>', 'EnergyShield | Armour | Evasion', 'EnergyShield')
+  .option('--league <name>', 'ligue pour les liens de trade', DEFAULT_LEAGUE)
+  .option('--min-roll <pct>', 'valeur minimale cherchée, en % du max', '70')
+  .option('--locale <locale>')
+  .option('--json', 'sortie JSON')
+  .action(async (skill: string, opts) => {
+    const t = createTranslator(opts.locale);
+    const engine = new PobEngine();
+    const quiet = Boolean(opts.json);
+    const log = (s: string) => { if (!quiet) console.error(s); };
+
+    try {
+      await engine.start();
+      const gems = await loadGemIndex(engine);
+      const mainGem = gems.find(skill) ?? gems.search(skill)[0];
+      if (!mainGem || mainGem.support) {
+        console.error(t('search.notFound', { query: skill }));
+        process.exitCode = 1;
+        return;
+      }
+
+      log(t('rare.loadingMods'));
+      const idx = await loadModIndex(engine);
+      log(t('rare.modsLoaded', { mods: idx.mods.length, bases: idx.bases.length }));
+      log(t('rare.running'));
+
+      const draft: BuildDraft = {
+        className: opts.class,
+        ascendancy: opts.ascendancy,
+        ascendClassId: 1,
+        level: Number(opts.level),
+        groups: [{ slot: 'Body Armour', main: { name: mainGem.name, level: 20, quality: 20 }, supports: [] }],
+        items: [],
+      };
+
+      let stats = (await engine.evaluate(toPobXml(draft))).stats;
+      const before = resistanceStatus(stats);
+      const targets: Array<{ slot: string; base: string; affixes: string[]; url: string }> = [];
+
+      // Les emplacements sont traités en séquence : chaque objet est équipé
+      // avant de calculer les besoins du suivant, sinon on demanderait huit
+      // fois les mêmes résistances.
+      for (const slot of Object.keys(SLOT_TO_BASE_TYPE)) {
+        const base = pickBase(idx, SLOT_TO_BASE_TYPE[slot], opts.defence, Number(opts.level));
+        if (!base) continue;
+
+        const needs = needsFromStats(stats);
+        const target = buildRareTarget(idx, slot, base, needs, {
+          itemLevel: Number(opts.itemLevel),
+        });
+        const mods = [...target.prefixes, ...target.suffixes];
+        if (mods.length === 0) continue;
+
+        draft.items!.push({ slot, raw: target.raw });
+        stats = (await engine.evaluate(toPobXml(draft))).stats;
+
+        targets.push({
+          slot,
+          base: base.name,
+          affixes: mods.flatMap((m) => m.stats.map((x) => x.replace(/\((\d+)-(\d+)\)/g, '$2'))),
+          url: buildTradeSearchUrl(mods, base, {
+            league: opts.league,
+            minRollRatio: Number(opts.minRoll) / 100,
+          }),
+        });
+      }
+
+      const after = resistanceStatus(stats);
+      const findings = auditBuild(stats);
+
+      if (opts.json) {
+        console.log(JSON.stringify({ targets, before, after, findings }, null, 2));
+        return;
+      }
+
+      const out: string[] = ['', `\x1b[1m\x1b[36m━━━ ${t('rare.title')} ━━━\x1b[0m`, ''];
+      for (const tg of targets) {
+        out.push(`  \x1b[1m${t('rare.slot', { slot: tg.slot, base: tg.base })}\x1b[0m`);
+        for (const a of tg.affixes) out.push(`      \x1b[2m${a}\x1b[0m`);
+        out.push(`      \x1b[36m${tg.url}\x1b[0m`);
+        out.push('');
+      }
+      out.push(
+        `  ${t('stat.FireResist')} ${before.fire} → \x1b[32m${after.fire}\x1b[0m` +
+        `   ${t('stat.ColdResist')} ${before.cold} → \x1b[32m${after.cold}\x1b[0m` +
+        `   ${t('stat.LightningResist')} ${before.lightning} → \x1b[32m${after.lightning}\x1b[0m` +
+        `   ${t('stat.ChaosResist')} ${before.chaos} → ${after.chaos}`,
+      );
+      out.push('');
+      for (const f of findings) {
+        const ic = f.severity === 'critical' ? '\x1b[31m✗' : f.severity === 'warning' ? '\x1b[33m!' : '\x1b[32m✓';
+        out.push(`  ${ic}\x1b[0m ${t(f.key, f.params)}`);
+      }
+      out.push('', `  \x1b[2m${t('rare.notASimulator')}\x1b[0m`);
+      out.push(`  \x1b[2m${t('rare.rollNote', { ratio: opts.minRoll })}\x1b[0m`, '');
+      console.log(out.join('\n'));
     } catch (err) {
       console.error(t('error.generic', { message: (err as Error).message }));
       process.exitCode = 1;

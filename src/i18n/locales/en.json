@@ -226,5 +226,16 @@
     "comfortable": "comfortable",
     "optimised": "optimised",
     "mirror": "mirror tier"
+  },
+  "rare": {
+    "title": "Rare items to aim for",
+    "running": "Generating rare items (resistance cap first)…",
+    "slot": "{slot} — {base}",
+    "tradeLink": "Search on trade:",
+    "affixes": "Target affixes",
+    "notASimulator": "This is not a crafting simulator: no probabilities or currency are modelled. It describes the item to LOOK FOR or AIM AT, using only affixes that can actually roll on this base at this item level.",
+    "rollNote": "Values shown are top-of-range; trade links search from {ratio}% of that value.",
+    "loadingMods": "Loading the mod pool…",
+    "modsLoaded": "{mods} mods and {bases} bases loaded from Path of Building"
   }
 }
