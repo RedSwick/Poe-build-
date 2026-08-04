@@ -255,7 +255,11 @@
     "validateDone": "{ok}/{total} builds reproducidas fielmente.",
     "sample": "Corpus: {n} builds.",
     "priorUsed": "Corpus: {n} soportes conocidos para {skill} (de {builds} builds) — probados primero.",
-    "priorMissing": "Corpus: ninguna build con {skill}, orden por defecto."
+    "priorMissing": "Corpus: ninguna build con {skill}, orden por defecto.",
+    "scanNothing": "No se encontró ninguna instalación de Path of Building. Carpetas buscadas:\n  {dirs}\n\nPasa la ruta como argumento: corpus scan \"C:/Users/tu/Documents/Path of Building/Builds\"",
+    "scanFound": "{count} archivos de build encontrados — importando…",
+    "scanDone": "{added} añadidos · {updated} actualizados · {skipped} descartados · {failed} ilegibles",
+    "scanWrongVersion": "{count} builds descartados por no estar en el árbol {target}: {sample}… — vuelve a ejecutar con --any-version para conservarlos."
   },
   "config": {
     "using": "Condiciones de combate — {config}. Cualquier cifra de DPS solo tiene sentido respecto a estas."

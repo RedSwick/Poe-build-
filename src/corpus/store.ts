@@ -30,6 +30,8 @@ export interface CorpusEntry {
   treeNodes: number[];
   /** Effets de mastery retenus. */
   masteryEffects: Array<[number, number]>;
+  /** Version de l'arbre du build : la seule marque de ligue dans un export. */
+  treeVersion?: string | null;
   xml: string;
 }
 
@@ -60,6 +62,56 @@ export function corpusPath(id: string): string {
   return path.join(CORPUS_DIR, `${id}.json`);
 }
 
+/** Version d'arbre visée par le projet. */
+export const TARGET_TREE_VERSION = '3_29';
+
+/**
+ * Version de l'arbre sur laquelle un build a été construit.
+ *
+ * C'est la seule marque de ligue fiable dans un export PoB : il n'y a pas de
+ * champ « ligue », mais l'arbre change à chaque extension et son numéro est
+ * écrit dans le XML. Un build en `3_28` a été pensé pour un arbre qui n'existe
+ * plus tel quel.
+ */
+export function treeVersionOf(xml: string): string | null {
+  return xml.match(/<Spec[^>]*\btreeVersion="([^"]+)"/)?.[1] ?? null;
+}
+
+/**
+ * Emplacements où Path of Building range ses builds, par système.
+ *
+ * PoB écrit un `.xml` par build, exactement au format qu'on sait déjà lire.
+ * Une installation un peu utilisée en contient des dizaines : c'est le corpus
+ * le plus riche et le plus immédiat qui soit, et il ne demande aucun réseau.
+ */
+export function defaultPobBuildDirs(): string[] {
+  const home = process.env.HOME ?? process.env.USERPROFILE ?? '';
+  const appData = process.env.APPDATA ?? path.join(home, 'AppData', 'Roaming');
+  return [
+    // Windows — installation classique et version Steam.
+    path.join(home, 'Documents', 'Path of Building', 'Builds'),
+    path.join(home, 'OneDrive', 'Documents', 'Path of Building', 'Builds'),
+    path.join(appData, 'Path of Building', 'Builds'),
+    // Linux / macOS, natif ou via Wine/Proton.
+    path.join(home, '.local', 'share', 'Path of Building', 'Builds'),
+    path.join(home, 'Library', 'Application Support', 'Path of Building', 'Builds'),
+    path.join(home, '.wine', 'drive_c', 'users', process.env.USER ?? '', 'Documents', 'Path of Building', 'Builds'),
+  ];
+}
+
+/** Parcourt un dossier et rend les fichiers de build qu'il contient. */
+export function findBuildFiles(dir: string, depth = 6): string[] {
+  if (!existsSync(dir) || depth < 0) return [];
+  const out: string[] = [];
+  for (const name of readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, name.name);
+    if (name.isDirectory()) out.push(...findBuildFiles(full, depth - 1));
+    // PoB écrit du `.xml` ; les codes exportés se rangent souvent en `.txt`.
+    else if (/\.(xml|txt)$/i.test(name.name)) out.push(full);
+  }
+  return out;
+}
+
 /**
  * Ajoute un build au corpus.
  *
@@ -67,8 +119,25 @@ export function corpusPath(id: string): string {
  * au lieu de le dupliquer, ce qui rend la commande sûre à relancer sur une
  * liste entière.
  */
-export async function addToCorpus(source: string): Promise<{ entry: CorpusEntry; isNew: boolean }> {
+export async function addToCorpus(
+  source: string,
+  options: { requireTreeVersion?: string | null } = {},
+): Promise<{ entry: CorpusEntry; isNew: boolean }> {
   const xml = await fetchBuildFromUrlOrCode(source);
+
+  // Un build d'une ancienne extension fausse tout ce qu'on en tire : les
+  // a priori de recherche comme la validation des calculs. Mieux vaut le
+  // refuser bruyamment que l'agréger en silence.
+  const required = options.requireTreeVersion;
+  if (required) {
+    const found = treeVersionOf(xml);
+    if (found !== required) {
+      throw new Error(
+        `build en arbre ${found ?? 'inconnu'}, attendu ${required} — ignoré`,
+      );
+    }
+  }
+
   const id = createHash('sha1').update(xml).digest('hex').slice(0, 12);
   const tree = extractTree(xml);
 
@@ -80,6 +149,7 @@ export async function addToCorpus(source: string): Promise<{ entry: CorpusEntry;
     authorStats: extractAuthorStats(xml),
     treeNodes: tree.nodes,
     masteryEffects: tree.masteries,
+    treeVersion: treeVersionOf(xml),
     xml,
   };
 

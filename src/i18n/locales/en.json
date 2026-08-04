@@ -255,7 +255,11 @@
     "validateDone": "{ok}/{total} builds reproduced faithfully.",
     "sample": "Corpus: {n} builds.",
     "priorUsed": "Corpus: {n} known supports for {skill} (from {builds} builds) — tested first.",
-    "priorMissing": "Corpus: no build with {skill}, default order."
+    "priorMissing": "Corpus: no build with {skill}, default order.",
+    "scanNothing": "No Path of Building installation found. Directories searched:\n  {dirs}\n\nPass the path as an argument: corpus scan \"C:/Users/you/Documents/Path of Building/Builds\"",
+    "scanFound": "{count} build files found — importing…",
+    "scanDone": "{added} added · {updated} updated · {skipped} skipped · {failed} unreadable",
+    "scanWrongVersion": "{count} builds skipped, not on tree {target}: {sample}… — re-run with --any-version to keep them anyway."
   },
   "config": {
     "using": "Combat conditions — {config}. Any DPS figure only means something relative to these."

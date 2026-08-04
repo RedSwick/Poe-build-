@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 import { PobEngine } from './pob/bridge.js';
 import { loadGemIndex } from './data/gems.js';
 import { resolveGoal } from './domain/goals.js';
@@ -29,7 +30,10 @@ import {
 } from './domain/rareBuilder.js';
 import { buildTradeSearchUrl } from './trade/searchLink.js';
 import { resistanceStatus } from './domain/goals.js';
-import { addToCorpus, loadCorpus, readSourceList } from './corpus/store.js';
+import {
+  addToCorpus, loadCorpus, readSourceList,
+  defaultPobBuildDirs, findBuildFiles, TARGET_TREE_VERSION,
+} from './corpus/store.js';
 import { validateCorpus, DEVIATION_THRESHOLD } from './corpus/validate.js';
 import { computePriors } from './corpus/priors.js';
 import { PobPool } from './pob/pool.js';
@@ -983,6 +987,58 @@ corpus
       }
     }
     console.log(t('corpus.addDone', { added, updated, failed, total: loadCorpus().length }));
+  });
+
+corpus
+  .command('scan')
+  .description('importe tous les builds d\'une installation Path of Building locale')
+  .argument('[dir]', 'dossier à parcourir (défaut : installations PoB détectées)')
+  .option('--any-version', 'accepter aussi les builds d\'une autre extension')
+  .option('--limit <n>', 'nombre maximum de builds importés')
+  .option('--locale <locale>')
+  .action(async (dir: string | undefined, opts) => {
+    const t = createTranslator(opts.locale);
+
+    const dirs = dir ? [dir] : defaultPobBuildDirs();
+    const files = dirs.flatMap((d) => findBuildFiles(d));
+
+    if (files.length === 0) {
+      console.error(t('corpus.scanNothing', { dirs: dirs.join('\n  ') }));
+      process.exitCode = 1;
+      return;
+    }
+
+    console.error(t('corpus.scanFound', { count: files.length }));
+    const requireTreeVersion = opts.anyVersion ? null : TARGET_TREE_VERSION;
+    const limit = opts.limit ? Number(opts.limit) : Infinity;
+
+    let added = 0, updated = 0, skipped = 0, failed = 0;
+    const wrongVersion: string[] = [];
+
+    for (const file of files) {
+      if (added + updated >= limit) break;
+      try {
+        const { entry, isNew } = await addToCorpus(file, { requireTreeVersion });
+        if (isNew) added++; else updated++;
+        console.error(`  \x1b[32m✓\x1b[0m ${entry.summary.ascendancy} ${entry.summary.level} — ${path.basename(file)}`);
+      } catch (err) {
+        const msg = (err as Error).message;
+        // Un dossier PoB contient aussi des fichiers qui ne sont pas des
+        // builds : ce n'est pas une erreur, juste du bruit à écarter.
+        if (/arbre .* attendu/.test(msg)) { wrongVersion.push(path.basename(file)); skipped++; }
+        else failed++;
+      }
+    }
+
+    console.error('');
+    console.error(t('corpus.scanDone', { added, updated, skipped, failed }));
+    if (wrongVersion.length > 0) {
+      console.error(t('corpus.scanWrongVersion', {
+        count: wrongVersion.length,
+        target: TARGET_TREE_VERSION,
+        sample: wrongVersion.slice(0, 5).join(', '),
+      }));
+    }
   });
 
 corpus

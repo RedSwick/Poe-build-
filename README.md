@@ -192,6 +192,30 @@ npx tsx src/cli.ts corpus validate                # nos calculs vs ceux de l'aut
 npx tsx src/cli.ts corpus stats "Winter Orb"      # a priori de recherche
 ```
 
+#### Importer en masse depuis ton installation Path of Building
+
+```bash
+npx tsx src/cli.ts corpus scan                    # détecte l'installation PoB
+npx tsx src/cli.ts corpus scan "C:/Users/toi/Documents/Path of Building/Builds"
+```
+
+C'est la source de builds réels la plus riche et la plus immédiate : **aucun
+réseau**. PoB écrit un `.xml` par build, déjà décodé, exactement au format
+qu'on sait lire. Une installation un peu utilisée en contient des dizaines —
+tous ceux que tu as importés ou fabriqués depuis le début.
+
+Les emplacements usuels sont détectés seuls (Windows, OneDrive, Steam, Linux,
+macOS, Wine). Le parcours est récursif : les sous-dossiers de rangement de PoB
+sont suivis.
+
+**Le contrôle de version est strict par défaut.** Un export PoB n'a pas de
+champ « ligue », mais il porte la version de l'arbre, qui change à chaque
+extension. Tout build qui n'est pas en `3_29` est écarté et signalé —
+`--any-version` pour les garder quand même.
+
+Vérifié sur une installation de test contenant deux builds 3.29, un build 3.25
+et un fichier quelconque : `2 ajoutés · 0 mis à jour · 1 écartés · 1 illisibles`.
+
 Voir `corpus/README.md`.
 
 ### Chercher la meilleure ascendance

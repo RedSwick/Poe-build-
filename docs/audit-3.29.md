@@ -168,6 +168,40 @@ en local** : c'est de l'exposition, pas de la collecte.
 
 ---
 
+## Défaut connu : le client poe.ninja vise une API morte
+
+Corroboré en lisant le code de [`shalayiding/POEMCP`](https://github.com/shalayiding/POEMCP),
+dont le `CLAUDE.md` documente la forme **vérifiée contre une réponse live** :
+
+- poe.ninja a migré vers `https://poe.ninja/poe1/api/economy/current/dense/overviews?league={league}&language=en`,
+  **une seule requête** qui remplace la quinzaine d'appels par type.
+- La forme des lignes a changé : `{name, variant?, chaos, graph}`. Plus de
+  `divineValue`, `listingCount`, `links`, `gemLevel`/`gemQuality` — le nombre
+  de liens, la corruption et le niveau de gemme sont repliés dans le champ
+  libre `variant`. La valeur en divine se dérive du prix en chaos du
+  `Divine Orb` présent dans la même réponse.
+
+Notre `src/trade/ninja.ts` appelle encore l'ancien `/api/data/itemoverview` et
+lit les anciens champs. **Il aurait échoué même sans blocage réseau.**
+Non corrigé à l'aveugle : la correction se fera contre une vraie réponse, hors
+de cet environnement.
+
+Autre point utile du même code : `https://www.pathofexile.com/api/leagues`
+n'est **pas** derrière Cloudflare et ne demande pas d'OAuth — c'est la bonne
+source pour connaître le nom exact de la ligue en cours plutôt que de le
+coder en dur.
+
+## Corroboration : les codes PoB collés se corrompent
+
+POEMCP a constaté indépendamment ce qu'on avait diagnostiqué sur un code
+collé par l'utilisateur : « a corrupted paste decompresses ~3KB of genuinely
+valid PoB XML before hitting a mid-stream zlib error ». Leur conclusion est la
+nôtre — le pipeline de décodage est correct, c'est le transit qui abîme la
+chaîne. Ils refusent carrément les codes bruts et n'acceptent que des liens.
+
+Nous restons plus permissifs (code brut accepté) mais le message d'erreur
+distingue désormais les deux cas et oriente vers pobb.in.
+
 ## Ce qui reste non vérifiable ici
 
 - Prix et méta (poe.ninja bloqué) — le client existe, jamais exécuté en réel.

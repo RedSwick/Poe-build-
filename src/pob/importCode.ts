@@ -1,3 +1,4 @@
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { inflate, inflateRaw } from 'node:zlib';
 import { promisify } from 'node:util';
 
@@ -76,6 +77,14 @@ export async function decodePobCode(code: string): Promise<string> {
  */
 export async function fetchBuildFromUrlOrCode(input: string): Promise<string> {
   const trimmed = input.trim();
+
+  // Fichier local. Path of Building range chaque build dans un `.xml` déjà
+  // décodé ; une installation un peu utilisée en contient des dizaines, et
+  // c'est la seule source de builds réels qui ne dépende d'aucun réseau.
+  if (existsSync(trimmed) && statSync(trimmed).isFile()) {
+    const body = readFileSync(trimmed, 'utf8');
+    return body.trimStart().startsWith('<') ? body : decodePobCode(body);
+  }
 
   const pastebin = trimmed.match(/pastebin\.com\/(?:raw\/)?([A-Za-z0-9]+)/);
   if (pastebin) {
