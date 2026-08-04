@@ -41,6 +41,8 @@ export interface BuildDraft {
   groups: SkillGroup[];
   mainGroupIndex?: number;
   treeNodes?: number[];
+  /** Effets de mastery retenus, sous forme [nœud, effet]. */
+  masteryEffects?: Array<[nodeId: number, effectId: number]>;
   treeVersion?: string;
   bandit?: string;
   items?: ItemDraft[];

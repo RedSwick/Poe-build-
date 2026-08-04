@@ -247,15 +247,6 @@ local function treeAlloc(req)
 
 	local missing = {}
 
-	-- L'effet d'une mastery doit être choisi AVANT son allocation : sans
-	-- sélection, PoB considère le nœud comme non alloué.
-	for _, m in ipairs(req.masteries or {}) do
-		local node = spec.nodes[m[1]]
-		if node then
-			spec.masterySelections[m[1]] = m[2]
-		end
-	end
-
 	for _, id in ipairs(req.targets or {}) do
 		local node = spec.nodes[id]
 		if not node then
@@ -265,10 +256,15 @@ local function treeAlloc(req)
 		end
 	end
 
+	-- La sélection d'effet est posée juste avant d'allouer SA mastery :
+	-- chaque AllocNode déclenche BuildAllDependsAndPaths, qui efface les
+	-- sélections portant sur des masteries pas encore allouées.
 	for _, m in ipairs(req.masteries or {}) do
 		local node = spec.nodes[m[1]]
 		if node then
+			spec.masterySelections[m[1]] = m[2]
 			spec:AllocNode(node)
+			spec.masterySelections[m[1]] = m[2]
 		else
 			table.insert(missing, m[1])
 		end
@@ -287,11 +283,13 @@ local function treeAlloc(req)
 
 	local used, ascUsed = spec:CountAllocNodes()
 
+	-- On garde TOUS les nœuds alloués, départ de classe et d'ascendance
+	-- compris : PoB reconstruit l'arbre à partir de cette liste, et sans
+	-- racine rien ne se connecte — le build re-sérialisé repart à zéro.
+	-- Ces nœuds ne comptent pas dans `pointsUsed`, qui les exclut déjà.
 	local allocated = {}
-	for id, node in pairs(spec.allocNodes) do
-		if node.type ~= "ClassStart" and node.type ~= "AscendClassStart" then
-			table.insert(allocated, id)
-		end
+	for id in pairs(spec.allocNodes) do
+		table.insert(allocated, id)
 	end
 
 	local masterySelections = {}

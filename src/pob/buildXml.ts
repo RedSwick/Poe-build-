@@ -71,6 +71,13 @@ export function toPobXml(draft: BuildDraft): string {
     ? draft.treeNodes.join(',')
     : '58833';
 
+  // Sans cet attribut, toute re-sérialisation d'un build perd ses masteries :
+  // PoB considère alors les nœuds de mastery comme non alloués, et les
+  // défenses ou dégâts qu'ils apportaient disparaissent silencieusement.
+  const masteryEffects = (draft.masteryEffects ?? [])
+    .map(([node, effect]) => `{${node},${effect}}`)
+    .join(',');
+
   const config = (draft.config ?? [])
     .map((c) =>
       c.value === true
@@ -96,7 +103,7 @@ export function toPobXml(draft: BuildDraft): string {
 <PathOfBuilding>
   <Build level="${draft.level}" targetVersion="3_0" className="${escapeXml(draft.className)}" ascendClassName="${escapeXml(draft.ascendancy)}" mainSocketGroup="${mainIndex + 1}" viewMode="CALCS" bandit="${escapeXml(draft.bandit ?? 'None')}" pantheonMajorGod="None" pantheonMinorGod="None"/>
   <Tree activeSpec="1">
-    <Spec treeVersion="${escapeXml(draft.treeVersion ?? '3_29')}" classId="${classId}" ascendClassId="${draft.ascendClassId ?? 0}" nodes="${nodes}" masteryEffects=""/>
+    <Spec treeVersion="${escapeXml(draft.treeVersion ?? '3_29')}" classId="${classId}" ascendClassId="${draft.ascendClassId ?? 0}" nodes="${nodes}" masteryEffects="${masteryEffects}"/>
   </Tree>
   <Skills activeSkillSet="1" defaultGemLevel="normalMaximum" sortGemsByDPS="true">
     <SkillSet id="1">
