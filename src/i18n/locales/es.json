@@ -246,5 +246,13 @@
     "rejected": "Descartadas por falta de maná: {list}",
     "note": "Las auras son la palanca defensiva más fuerte del juego, pero su reserva de maná es una restricción dura: un aura de más deja inutilizable la habilidad principal.",
     "unblocking": "Relanzando el árbol con las auras bloqueadas ({list}): buscando reserva…"
+  },
+  "corpus": {
+    "noSource": "Da al menos un enlace, un código, o un archivo con -f.",
+    "empty": "Corpus vacío. Añade builds con: pba corpus add -f mis-builds.txt",
+    "addDone": "\n{added} añadidos, {updated} actualizados, {failed} fallidos — {total} builds en el corpus.",
+    "startingPool": "Iniciando {n} motores PoB…",
+    "validateDone": "{ok}/{total} builds reproducidas fielmente.",
+    "sample": "Corpus: {n} builds."
   }
 }

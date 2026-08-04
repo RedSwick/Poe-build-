@@ -246,5 +246,13 @@
     "rejected": "Rejected for lack of mana: {list}",
     "note": "Auras are the strongest defensive lever in the game, but their mana reservation is a hard constraint: one aura too many makes the main skill unusable.",
     "unblocking": "Re-running the tree with the blocked auras ({list}): looking for reservation…"
+  },
+  "corpus": {
+    "noSource": "Give at least one link, code, or a file with -f.",
+    "empty": "Empty corpus. Add builds with: pba corpus add -f my-builds.txt",
+    "addDone": "\n{added} added, {updated} updated, {failed} failed — {total} builds in corpus.",
+    "startingPool": "Starting {n} PoB engines…",
+    "validateDone": "{ok}/{total} builds reproduced faithfully.",
+    "sample": "Corpus: {n} builds."
   }
 }

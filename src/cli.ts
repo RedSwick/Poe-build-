@@ -28,6 +28,10 @@ import {
 } from './domain/rareBuilder.js';
 import { buildTradeSearchUrl } from './trade/searchLink.js';
 import { resistanceStatus } from './domain/goals.js';
+import { addToCorpus, loadCorpus, readSourceList } from './corpus/store.js';
+import { validateCorpus, DEVIATION_THRESHOLD } from './corpus/validate.js';
+import { computePriors } from './corpus/priors.js';
+import { PobPool } from './pob/pool.js';
 
 /** Résultat neutre quand l'optimisation des supports est désactivée. */
 function emptySupportResult(): OptimizeResult {
@@ -610,6 +614,111 @@ program
       process.exitCode = 1;
     } finally {
       engine.stop();
+    }
+  });
+
+const corpus = program.command('corpus').description('constitue et exploite un corpus de builds réels');
+
+corpus
+  .command('add')
+  .description('ajoute un ou plusieurs builds (lien pobb.in/pastebin, code, ou fichier de liens)')
+  .argument('[sources...]', 'liens ou codes')
+  .option('-f, --file <path>', 'fichier contenant un lien par ligne')
+  .action(async (sources: string[], opts) => {
+    const t = createTranslator();
+    const list = [...(sources ?? []), ...(opts.file ? readSourceList(opts.file) : [])];
+    if (list.length === 0) {
+      console.error(t('corpus.noSource'));
+      process.exitCode = 1;
+      return;
+    }
+
+    let added = 0, updated = 0, failed = 0;
+    for (const [i, src] of list.entries()) {
+      const label = src.length > 60 ? src.slice(0, 57) + '…' : src;
+      try {
+        const { entry, isNew } = await addToCorpus(src);
+        isNew ? added++ : updated++;
+        console.log(
+          `[${i + 1}/${list.length}] ${isNew ? '+' : '~'} ${entry.summary.className}/${entry.summary.ascendancy} ` +
+          `niv ${entry.summary.level} — ${entry.summary.groups.length} groupes, ${Object.keys(entry.authorStats).length} stats de référence`,
+        );
+      } catch (err) {
+        failed++;
+        console.error(`[${i + 1}/${list.length}] ✗ ${label} — ${(err as Error).message}`);
+      }
+    }
+    console.log(t('corpus.addDone', { added, updated, failed, total: loadCorpus().length }));
+  });
+
+corpus
+  .command('validate')
+  .description('compare nos calculs aux stats stockées dans chaque build')
+  .option('--json', 'sortie JSON')
+  .action(async (opts) => {
+    const t = createTranslator();
+    const entries = loadCorpus();
+    if (entries.length === 0) {
+      console.error(t('corpus.empty'));
+      process.exitCode = 1;
+      return;
+    }
+
+    const pool = new PobPool();
+    console.error(t('corpus.startingPool', { n: pool.size }));
+    await pool.start();
+    try {
+      const results = await validateCorpus(pool, entries, (done, total) => {
+        if (!opts.json) process.stderr.write(`\r  ${done}/${total} builds rejoués   `);
+      });
+      if (!opts.json) process.stderr.write('\n');
+
+      if (opts.json) { console.log(JSON.stringify(results, null, 2)); return; }
+
+      const bad = results.filter((r) => r.error || r.worstDeviation > DEVIATION_THRESHOLD);
+      console.log('');
+      for (const r of results) {
+        const head = `${r.className}/${r.ascendancy} niv ${r.level}`;
+        if (r.error) { console.log(`  \x1b[31m✗\x1b[0m ${head} — ${r.error}`); continue; }
+        const worst = r.comparisons.filter(c => (c.deviation ?? 0) > DEVIATION_THRESHOLD)
+          .sort((a,b)=>(b.deviation??0)-(a.deviation??0)).slice(0,3);
+        if (worst.length === 0) { console.log(`  \x1b[32m✓\x1b[0m ${head}`); continue; }
+        console.log(`  \x1b[33m!\x1b[0m ${head}`);
+        for (const c of worst) {
+          console.log(`      ${c.stat.padEnd(16)} auteur ${Math.round(c.author).toLocaleString('fr')}` +
+            `  vs  nous ${Math.round(c.computed).toLocaleString('fr')}  (${((c.deviation ?? 0) * 100).toFixed(0)} % d'écart)`);
+        }
+      }
+      console.log('');
+      console.log(t('corpus.validateDone', { ok: results.length - bad.length, total: results.length }));
+    } finally {
+      pool.stop();
+    }
+  });
+
+corpus
+  .command('stats')
+  .description('a priori tirés du corpus (supports, ascendancies, noeuds)')
+  .argument('[skill]', 'filtrer sur une gemme principale')
+  .action(async (skill?: string) => {
+    const t = createTranslator();
+    const entries = loadCorpus();
+    if (entries.length === 0) { console.error(t('corpus.empty')); process.exitCode = 1; return; }
+    const p = computePriors(entries);
+    console.log(t('corpus.sample', { n: p.sampleSize }));
+
+    const skills = skill
+      ? [...p.supportsBySkill.keys()].filter((s) => s.toLowerCase().includes(skill.toLowerCase()))
+      : [...p.supportsBySkill.keys()].sort((a, b) => (p.supportsBySkill.get(b)?.[0]?.count ?? 0) - (p.supportsBySkill.get(a)?.[0]?.count ?? 0)).slice(0, 12);
+
+    for (const s of skills) {
+      const sup = p.supportsBySkill.get(s) ?? [];
+      const asc = p.ascendancyBySkill.get(s) ?? [];
+      if (sup.length === 0) continue;
+      console.log(`\n\x1b[1m${s}\x1b[0m  ${asc.slice(0,2).map(a=>`${a.name} ${(a.share*100).toFixed(0)}%`).join(', ')}`);
+      for (const x of sup.slice(0, 8)) {
+        console.log(`   ${String(Math.round(x.share*100)).padStart(3)}%  ${x.name}`);
+      }
     }
   });
 

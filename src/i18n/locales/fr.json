@@ -246,5 +246,13 @@
     "rejected": "Écartées faute de mana : {list}",
     "note": "Les auras sont le levier défensif le plus fort du jeu, mais leur réservation de mana est une contrainte dure : une aura de trop rend la compétence principale inutilisable.",
     "unblocking": "Relance de l'arbre avec les auras bloquées ({list}) : recherche de réservation…"
+  },
+  "corpus": {
+    "noSource": "Donne au moins un lien, un code, ou un fichier avec -f.",
+    "empty": "Corpus vide. Ajoute des builds avec : pba corpus add -f mes-builds.txt",
+    "addDone": "\n{added} ajoutés, {updated} mis à jour, {failed} en échec — {total} builds au corpus.",
+    "startingPool": "Démarrage de {n} moteurs PoB…",
+    "validateDone": "{ok}/{total} builds reproduits fidèlement.",
+    "sample": "Corpus : {n} builds."
   }
 }
