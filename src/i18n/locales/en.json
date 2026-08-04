@@ -208,5 +208,23 @@
   "web": {
     "slowNote": "A full optimisation runs hundreds of Path of Building calculations: expect several minutes. Lower the tree point budget for a quick test.",
     "empty": "Run an optimisation or import a build to see results here."
+  },
+  "gear": {
+    "running": "Searching for gear (tier: {tier})…",
+    "title": "Recommended gear",
+    "empty": "Slots with no worthwhile unique: {slots}",
+    "pricesUnavailable": "Prices unavailable (poe.ninja unreachable): the budget tier could not be applied, all uniques were considered.",
+    "uniquesOnly": "Only unique items are proposed. A real build mostly relies on rares with chosen mods, which this tool cannot craft yet.",
+    "partialSearch": "{tested} uniques tested per slot out of {total} available: the search is partial.",
+    "resGain": "res +{n}",
+    "loadingUniques": "Loading unique items…",
+    "uniquesLoaded": "{count} uniques loaded",
+    "loadingPrices": "Fetching poe.ninja prices (league {league})…"
+  },
+  "tier": {
+    "leagueStart": "league start",
+    "comfortable": "comfortable",
+    "optimised": "optimised",
+    "mirror": "mirror tier"
   }
 }

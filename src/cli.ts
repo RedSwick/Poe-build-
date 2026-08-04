@@ -16,6 +16,11 @@ import { createTranslator, availableLocales } from './i18n/index.js';
 import type { BuildDraft } from './domain/types.js';
 import { fetchBuildFromUrlOrCode, summarizeBuildXml } from './pob/importCode.js';
 import { auditBuild, snapshot } from './domain/audit.js';
+import { loadUniqueIndex } from './data/uniques.js';
+import { optimizeGear } from './domain/gearOptimizer.js';
+import { createPriceFilter, type BudgetTier } from './domain/budget.js';
+import { loadPriceIndex, DEFAULT_LEAGUE, type PriceIndex } from './trade/ninja.js';
+import { renderGear } from './report/renderGear.js';
 
 /** Résultat neutre quand l'optimisation des supports est désactivée. */
 function emptySupportResult(): OptimizeResult {
@@ -269,6 +274,115 @@ program
         const kind = g.support ? 'support' : 'active';
         console.log(`${g.name}  [${kind}]  ${g.tags.join(', ')}`);
       }
+    } finally {
+      engine.stop();
+    }
+  });
+
+program
+  .command('gear')
+  .description('cherche le meilleur équipement unique pour une compétence')
+  .argument('<skill>', 'gemme principale')
+  .option('-g, --goal <goal>', 'damage | life | tankiness | balanced', 'balanced')
+  .option('-c, --class <class>', 'classe', 'Witch')
+  .option('-a, --ascendancy <asc>', 'ascendance', 'Occultist')
+  .option('-l, --level <n>', 'niveau', '90')
+  .option('-b, --budget <tier>', 'leagueStart | comfortable | optimised | mirror', 'comfortable')
+  .option('--league <name>', 'ligue poe.ninja', DEFAULT_LEAGUE)
+  .option('--slots <list>', 'emplacements, séparés par des virgules')
+  .option('--candidates <n>', 'uniques testés par emplacement', '40')
+  .option('--locale <locale>')
+  .option('--json', 'sortie JSON')
+  .action(async (skill: string, opts) => {
+    const t = createTranslator(opts.locale);
+    const engine = new PobEngine();
+    const quiet = Boolean(opts.json);
+    const log = (s: string) => { if (!quiet) console.error(s); };
+
+    try {
+      log(t('engine.starting'));
+      await engine.start();
+
+      log(t('engine.loadingGems'));
+      const gems = await loadGemIndex(engine);
+      const mainGem = gems.find(skill) ?? gems.search(skill)[0];
+      if (!mainGem || mainGem.support) {
+        console.error(t('search.notFound', { query: skill }));
+        process.exitCode = 1;
+        return;
+      }
+
+      log(t('gear.loadingUniques'));
+      const uniques = await loadUniqueIndex(engine);
+      log(t('gear.uniquesLoaded', { count: uniques.all.length }));
+
+      // Les prix sont facultatifs : sans eux on optimise quand même, en le
+      // disant clairement plutôt qu'en filtrant sur des données absentes.
+      log(t('gear.loadingPrices', { league: opts.league }));
+      let prices: PriceIndex | null = null;
+      try {
+        prices = await loadPriceIndex(opts.league);
+      } catch (err) {
+        log(t('error.generic', { message: (err as Error).message }));
+      }
+
+      const tier = opts.budget as BudgetTier;
+      const filter = createPriceFilter(tier, prices);
+      const goal = resolveGoal(opts.goal);
+      const level = Number(opts.level);
+
+      const base: BuildDraft = {
+        className: opts.class,
+        ascendancy: opts.ascendancy,
+        ascendClassId: 1,
+        level,
+        groups: [{ slot: 'Body Armour', main: { name: mainGem.name, level: 20, quality: 20 }, supports: [] }],
+      };
+
+      let lastLabel = '';
+      const result = await optimizeGear(engine, uniques, base, goal, {
+        slots: opts.slots ? String(opts.slots).split(',').map((x) => x.trim()) : undefined,
+        maxCandidatesPerSlot: Number(opts.candidates),
+        priceFilter: filter,
+        onProgress: (done, total, label) => {
+          if (quiet) return;
+          if (process.stderr.isTTY) {
+            if (label !== lastLabel) { process.stderr.write('\n'); lastLabel = label; }
+            process.stderr.write(`\r  ${t('optimize.progress', { label, done, total })}   `);
+          } else if (done === total) {
+            process.stderr.write(`  ${t('optimize.progress', { label, done, total })}\n`);
+          }
+        },
+      });
+      if (!quiet) process.stderr.write('\n');
+
+      const findings = auditBuild(result.finalStats);
+      if (opts.json) {
+        console.log(JSON.stringify({
+          tier,
+          pricesUnavailable: filter.unavailable,
+          chosen: result.chosen.map((c) => ({
+            slot: c.slot, name: c.item.name, base: c.item.base,
+            gainPercent: Number(c.gainPercent.toFixed(2)), price: c.price,
+          })),
+          emptySlots: result.emptySlots,
+          snapshot: snapshot(result.finalStats),
+          findings,
+          evaluations: result.evaluations,
+        }, null, 2));
+        return;
+      }
+
+      console.log(renderGear(t, {
+        result,
+        tier,
+        pricesUnavailable: filter.unavailable,
+        testedPerSlot: Number(opts.candidates),
+        findings,
+      }));
+    } catch (err) {
+      console.error(t('error.generic', { message: (err as Error).message }));
+      process.exitCode = 1;
     } finally {
       engine.stop();
     }

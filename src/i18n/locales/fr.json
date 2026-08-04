@@ -208,5 +208,23 @@
   "web": {
     "slowNote": "Une optimisation complète enchaîne des centaines de calculs par le moteur Path of Building : compte plusieurs minutes. Réduis le budget de points d'arbre pour un essai rapide.",
     "empty": "Lance une optimisation ou importe un build pour voir les résultats ici."
+  },
+  "gear": {
+    "running": "Recherche d'équipement (palier : {tier})…",
+    "title": "Équipement recommandé",
+    "empty": "Emplacements sans unique intéressant : {slots}",
+    "pricesUnavailable": "Prix indisponibles (poe.ninja injoignable) : le palier de budget n'a pas pu être appliqué, tous les uniques ont été considérés.",
+    "uniquesOnly": "Seuls les objets uniques sont proposés. Un build réel s'appuie surtout sur des rares aux mods choisis, que cet outil ne sait pas encore générer.",
+    "partialSearch": "{tested} uniques testés par emplacement sur les {total} disponibles : la recherche est partielle.",
+    "resGain": "res +{n}",
+    "loadingUniques": "Chargement des objets uniques…",
+    "uniquesLoaded": "{count} uniques chargés",
+    "loadingPrices": "Récupération des prix poe.ninja (ligue {league})…"
+  },
+  "tier": {
+    "leagueStart": "début de ligue",
+    "comfortable": "confortable",
+    "optimised": "optimisé",
+    "mirror": "mirror tier"
   }
 }

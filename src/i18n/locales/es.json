@@ -208,5 +208,23 @@
   "web": {
     "slowNote": "Una optimización completa encadena cientos de cálculos del motor de Path of Building: cuenta con varios minutos. Reduce el presupuesto de puntos del árbol para una prueba rápida.",
     "empty": "Lanza una optimización o importa una build para ver los resultados aquí."
+  },
+  "gear": {
+    "running": "Buscando equipo (nivel: {tier})…",
+    "title": "Equipo recomendado",
+    "empty": "Espacios sin ningún único interesante: {slots}",
+    "pricesUnavailable": "Precios no disponibles (poe.ninja inaccesible): no se ha podido aplicar el nivel de presupuesto, se han considerado todos los únicos.",
+    "uniquesOnly": "Solo se proponen objetos únicos. Una build real se apoya sobre todo en raros con mods elegidos, que esta herramienta aún no sabe generar.",
+    "partialSearch": "{tested} únicos probados por espacio de los {total} disponibles: la búsqueda es parcial.",
+    "resGain": "res +{n}",
+    "loadingUniques": "Cargando objetos únicos…",
+    "uniquesLoaded": "{count} únicos cargados",
+    "loadingPrices": "Obteniendo precios de poe.ninja (liga {league})…"
+  },
+  "tier": {
+    "leagueStart": "inicio de liga",
+    "comfortable": "cómodo",
+    "optimised": "optimizado",
+    "mirror": "mirror tier"
   }
 }

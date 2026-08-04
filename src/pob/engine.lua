@@ -292,6 +292,44 @@ local function treeAlloc(req)
 	}
 end
 
+--- Exporte les objets uniques connus de PoB, groupés par type de base.
+--
+-- PoB stocke chaque unique sous forme de texte brut, identique au
+-- copier-coller depuis le jeu : c'est exactement ce qu'on réinjecte dans le
+-- XML d'un build pour l'équiper.
+local function uniques(req)
+	local out = {}
+	local wanted = req.types
+	for typeName, list in pairs(data.uniques) do
+		local keep = true
+		if type(wanted) == "table" and #wanted > 0 then
+			keep = false
+			for _, w in ipairs(wanted) do
+				if w == typeName then keep = true break end
+			end
+		end
+		if keep then
+			local entries = {}
+			for _, raw in ipairs(list) do
+				-- La première ligne est le nom, la deuxième la base.
+				local name, base = raw:match("^%s*([^\n]+)\n([^\n]+)")
+				if name then
+					table.insert(entries, {
+						name = name,
+						base = base,
+						raw = raw,
+						-- Nombre de variantes : un unique reworké au fil des
+						-- ligues en a plusieurs, la dernière étant l'actuelle.
+						variants = select(2, raw:gsub("\nVariant:", "")),
+					})
+				end
+			end
+			out[typeName] = entries
+		end
+	end
+	return { ok = true, uniques = out }
+end
+
 local HANDLERS = {
 	ping = function() return { ok = true, pong = true } end,
 	version = version,
@@ -299,6 +337,7 @@ local HANDLERS = {
 	gems = gems,
 	tree_candidates = treeCandidates,
 	tree_alloc = treeAlloc,
+	uniques = uniques,
 }
 
 -- Signale au parent que l'initialisation est terminée et que PoB a fini

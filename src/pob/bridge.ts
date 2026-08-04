@@ -218,6 +218,13 @@ export class PobEngine {
     return this.request({ action: 'tree_alloc', xml, targets, masteries, stats });
   }
 
+  /** Exporte les objets uniques connus de PoB, groupés par type de base. */
+  async uniques(types?: string[]): Promise<{
+    uniques: Record<string, Array<{ name: string; base: string; raw: string; variants: number }>>;
+  }> {
+    return this.request({ action: 'uniques', types });
+  }
+
   /** Exporte l'index des gemmes tel que chargé par PoB. */
   async gems<T>(): Promise<{ gems: T[] }> {
     return this.request({ action: 'gems' });

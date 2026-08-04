@@ -53,6 +53,27 @@ npx tsx src/cli.ts import https://pobb.in/xxxxx
 
 Décode le build, le recalcule avec le moteur 3.29 et rend un audit.
 
+### Équipement et budget
+
+```bash
+npx tsx src/cli.ts gear "Winter Orb" --budget comfortable
+npx tsx src/cli.ts gear "Winter Orb" --budget leagueStart --slots "Body Armour,Amulet,Belt"
+```
+
+Paliers : `leagueStart`, `comfortable`, `optimised`, `mirror`. Chaque unique
+candidat est **réellement équipé** et le build recalculé, comme pour les gemmes
+et l'arbre. 1322 uniques sont chargés depuis PoB.
+
+> ⚠️ **Prix non vérifiés.** Le client poe.ninja est écrit d'après l'API publique
+> documentée, mais **poe.ninja est bloqué (403) depuis l'environnement où ce
+> code a été développé** : il n'a donc jamais tourné contre le vrai service.
+> Sans prix, le palier de budget ne filtre rien et l'outil le dit explicitement
+> au lieu de faire semblant. À valider sur ta machine.
+
+> ⚠️ **Uniques seulement.** Un build réel s'appuie surtout sur des **rares** aux
+> mods choisis, que l'outil ne sait pas encore générer. La recherche est aussi
+> partielle : seuls les N premiers uniques par emplacement sont testés.
+
 ### Règles non négociables
 
 Le cap de résistances à 75 % n'est pas un bonus mais une **contrainte** : tant
@@ -134,6 +155,10 @@ src/
   domain/optimizer.ts     Sélection gloutonne des supports, mesurée par le moteur
   domain/treeOptimizer.ts Arbre de passifs et masteries, mesurés par le moteur
   domain/audit.ts         Règles dures : cap de résistances, overcap, pools
+  domain/gearOptimizer.ts Choix d'uniques par emplacement, mesuré par le moteur
+  domain/budget.ts        Paliers de budget adossés aux prix
+  data/uniques.ts         Index des uniques PoB, variante actuelle sélectionnée
+  trade/ninja.ts          Client poe.ninja (prix) — non vérifié, voir plus haut
   pob/importCode.ts       Décodage d'un code PoB / lien pastebin / pobb.in
   server/                 Interface web (SSE) + fichiers statiques
   report/render.ts    Rapport terminal + sortie JSON
@@ -192,18 +217,23 @@ le code métier, et que les briques réutilisables de l'écosystème PoE
 - **Pas d'équipement, donc pas de résistances réelles.** L'audit et la
   contrainte de cap fonctionnent, mais sur un personnage nu tout est à -60 % :
   ils prennent leur sens sur un build importé ou une fois le gear intégré.
-- **Pas encore de trade ni de prix.** L'optimiseur propose volontiers des gemmes
-  Awakened, sans notion de budget.
+- **Prix jamais testés en conditions réelles** (poe.ninja bloqué ici). Le code
+  est là, la vérification reste à faire.
+- **Pas de recherche sur le trade officiel.** L'API demande un POESESSID et
+  passe derrière Cloudflare ; rien n'est encore implémenté de ce côté.
+- **Pas de rares ni de craft.** L'optimiseur ne propose que des uniques, ce qui
+  ne suffit pas à capper des résistances dans un vrai build.
 - La sélection des supports est **gloutonne** : elle mesure chaque candidat mais
   n'explore pas toutes les combinaisons.
 
 ## Suite
 
-1. Équipement et modificateurs, puis intégration trade officielle + poe.ninja
-2. Paliers de budget (league start → mirror tier)
-3. Masteries et jewels dans l'optimisation d'arbre
-4. Couche IA (langage naturel → requête structurée)
-5. Interface web FR/EN/ES
+1. Vérifier le client poe.ninja hors environnement bloqué
+2. Objets rares : génération de mods cibles pour capper les résistances
+3. Recherche sur le trade officiel (POESESSID, Cloudflare, rate limits)
+4. Jewels et cluster jewels
+5. Suggestions de craft (currency, base, ordre)
+6. Couche IA (langage naturel → requête structurée)
 
 ## Licence
 
