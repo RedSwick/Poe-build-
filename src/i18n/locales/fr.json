@@ -204,5 +204,9 @@
     "upgrades": "Pistes d'amélioration",
     "treeVersionMismatch": "Attention : ce build a été créé pour l'arbre {version}, alors que la ligue actuelle est en 3.29. Les valeurs peuvent différer.",
     "mainSkillDetected": "Compétence principale détectée : {skill}"
+  },
+  "web": {
+    "slowNote": "Une optimisation complète enchaîne des centaines de calculs par le moteur Path of Building : compte plusieurs minutes. Réduis le budget de points d'arbre pour un essai rapide.",
+    "empty": "Lance une optimisation ou importe un build pour voir les résultats ici."
   }
 }

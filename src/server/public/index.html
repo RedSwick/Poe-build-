@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PoE Build Architect</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1>PoE Build <span>Architect</span></h1>
+    <div class="spacer"></div>
+    <div class="meta" id="engineMeta"></div>
+    <select id="locale" style="width:auto"></select>
+  </header>
+
+  <main>
+    <section>
+      <div class="tabs">
+        <button id="tabOptimize" class="active" data-tab="optimize"></button>
+        <button id="tabImport" data-tab="import"></button>
+      </div>
+
+      <div class="panel" id="panelOptimize">
+        <h2 data-i18n="report.skillSetup"></h2>
+
+        <label data-i18n="cli.optionSkill"></label>
+        <input id="skill" list="skills" value="Winter Orb" autocomplete="off">
+        <datalist id="skills"></datalist>
+
+        <label data-i18n="cli.optionGoal"></label>
+        <select id="goal">
+          <option value="balanced" data-i18n="goal.balanced"></option>
+          <option value="damage" data-i18n="goal.damage"></option>
+          <option value="life" data-i18n="goal.life"></option>
+          <option value="tankiness" data-i18n="goal.tankiness"></option>
+        </select>
+
+        <div class="row">
+          <div>
+            <label data-i18n="cli.optionClass"></label>
+            <select id="class">
+              <option>Witch</option><option>Templar</option><option>Shadow</option>
+              <option>Ranger</option><option>Duelist</option><option>Marauder</option>
+              <option>Scion</option>
+            </select>
+          </div>
+          <div>
+            <label data-i18n="cli.optionAscendancy"></label>
+            <input id="ascendancy" value="Occultist">
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label data-i18n="cli.optionLevel"></label>
+            <input id="level" type="number" value="90" min="1" max="100">
+          </div>
+          <div>
+            <label data-i18n="cli.optionLinks"></label>
+            <input id="links" type="number" value="6" min="1" max="6">
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label data-i18n="report.tree"></label>
+            <input id="treeBudget" type="number" value="40" min="0" max="123">
+          </div>
+          <div>
+            <label data-i18n="cli.optionGemLevel"></label>
+            <input id="gemLevel" type="number" value="20" min="1" max="21">
+          </div>
+        </div>
+
+        <button id="run"></button>
+
+        <div class="progress" id="progress">
+          <div class="meta" id="progressLabel"></div>
+          <div class="bar"><i id="progressBar"></i></div>
+        </div>
+        <p class="note" id="slowNote"></p>
+      </div>
+
+      <div class="panel" id="panelImport" style="display:none">
+        <h2 data-i18n="import.current"></h2>
+        <label>Code PoB / pastebin / pobb.in</label>
+        <textarea id="importSource" placeholder="eNrtvQdgHEmWJS..."></textarea>
+        <button id="runImport"></button>
+        <div class="progress" id="importProgress">
+          <div class="meta" data-i18n="import.loading"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="results">
+      <div class="empty" id="emptyState"></div>
+    </section>
+  </main>
+
+  <script src="/app.js" type="module"></script>
+</body>
+</html>

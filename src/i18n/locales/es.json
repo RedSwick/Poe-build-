@@ -204,5 +204,9 @@
     "upgrades": "Vías de mejora",
     "treeVersionMismatch": "Atención: esta build es para el árbol {version}, mientras que la liga actual es 3.29. Los valores pueden diferir.",
     "mainSkillDetected": "Habilidad principal detectada: {skill}"
+  },
+  "web": {
+    "slowNote": "Una optimización completa encadena cientos de cálculos del motor de Path of Building: cuenta con varios minutos. Reduce el presupuesto de puntos del árbol para una prueba rápida.",
+    "empty": "Lanza una optimización o importa una build para ver los resultados aquí."
   }
 }

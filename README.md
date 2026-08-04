@@ -33,6 +33,35 @@ seul les nœuds qu'un joueur prendrait : `Void Beacon` (le notable signature de
 l'Occultist pour le froid), `Elemental Overload` (correct pour une compétence
 à faible crit), `Mind Over Matter`, `Frost Walker`, `Blast Radius`.
 
+### Interface web
+
+```bash
+npx tsx src/cli.ts serve      # puis http://localhost:5173
+```
+
+Deux onglets : optimiser un build depuis une gemme principale, ou importer un
+build existant pour l'auditer. La progression est diffusée en direct (une
+optimisation complète dure plusieurs minutes). Langue commutable FR/EN/ES —
+l'interface lit les mêmes fichiers de locale que la ligne de commande.
+
+### Importer un build existant
+
+```bash
+npx tsx src/cli.ts import "<code PoB>"
+npx tsx src/cli.ts import https://pobb.in/xxxxx
+```
+
+Décode le build, le recalcule avec le moteur 3.29 et rend un audit.
+
+### Règles non négociables
+
+Le cap de résistances à 75 % n'est pas un bonus mais une **contrainte** : tant
+qu'il n'est pas atteint, le score entier est pénalisé. Concrètement
+l'optimiseur va chercher `Sentinel` (+10 % toutes résistances) avant des
+notables de dégâts, ce qu'il ne faisait pas sans cette règle. L'audit signale
+aussi un overcap insuffisant (< 25 %), car une map Elemental Weakness fait
+retomber sous le cap.
+
 ### Arbre de passifs
 
 ```bash
@@ -103,7 +132,10 @@ src/
   data/gems.ts        Index des gemmes, extrait de PoB (jamais scrapé)
   domain/goals.ts     Objectifs → pondérations, fonction de score
   domain/optimizer.ts     Sélection gloutonne des supports, mesurée par le moteur
-  domain/treeOptimizer.ts Allocation de l'arbre de passifs, mesurée par le moteur
+  domain/treeOptimizer.ts Arbre de passifs et masteries, mesurés par le moteur
+  domain/audit.ts         Règles dures : cap de résistances, overcap, pools
+  pob/importCode.ts       Décodage d'un code PoB / lien pastebin / pobb.in
+  server/                 Interface web (SSE) + fichiers statiques
   report/render.ts    Rapport terminal + sortie JSON
   i18n/               FR / EN / ES
 ```
@@ -155,7 +187,11 @@ le code métier, et que les briques réutilisables de l'écosystème PoE
   donc plusieurs nœuds sont alloués par balayage plutôt qu'un seul. Le résultat
   est bon mais pas prouvé optimal, et un budget complet (111 points) prend
   plusieurs minutes.
-- **Les jewels, masteries et jewels de cluster ne sont pas encore gérés.**
+- **Les jewels et jewels de cluster ne sont pas encore gérés** (les masteries,
+  elles, le sont).
+- **Pas d'équipement, donc pas de résistances réelles.** L'audit et la
+  contrainte de cap fonctionnent, mais sur un personnage nu tout est à -60 % :
+  ils prennent leur sens sur un build importé ou une fois le gear intégré.
 - **Pas encore de trade ni de prix.** L'optimiseur propose volontiers des gemmes
   Awakened, sans notion de budget.
 - La sélection des supports est **gloutonne** : elle mesure chaque candidat mais

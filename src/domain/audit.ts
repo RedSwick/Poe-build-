@@ -47,7 +47,7 @@ export function auditBuild(stats: PobStatsLike): AuditFinding[] {
       num('ColdResistOverCap'),
       num('LightningResistOverCap'),
     );
-    if (overcap < 20) {
+    if (overcap < 25) {
       findings.push({
         severity: 'warning',
         key: 'audit.resOvercapLow',

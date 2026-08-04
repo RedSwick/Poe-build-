@@ -204,5 +204,9 @@
     "upgrades": "Improvement leads",
     "treeVersionMismatch": "Warning: this build targets tree {version}, while the current league is 3.29. Values may differ.",
     "mainSkillDetected": "Main skill detected: {skill}"
+  },
+  "web": {
+    "slowNote": "A full optimisation runs hundreds of Path of Building calculations: expect several minutes. Lower the tree point budget for a quick test.",
+    "empty": "Run an optimisation or import a build to see results here."
   }
 }

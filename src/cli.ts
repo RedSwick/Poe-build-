@@ -275,6 +275,15 @@ program
   });
 
 program
+  .command('serve')
+  .description('lance l\'interface web')
+  .option('-p, --port <n>', 'port', '5173')
+  .action(async (opts) => {
+    const { startServer } = await import('./server/index.js');
+    await startServer(Number(opts.port));
+  });
+
+program
   .command('doctor')
   .description('vérifie l\'installation du moteur PoB')
   .action(async () => {
