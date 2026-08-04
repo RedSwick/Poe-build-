@@ -93,12 +93,14 @@ export interface TreeOptimizeResult {
  *
  * Comme pour les gemmes, chaque candidat est réellement alloué et mesuré par
  * le moteur PoB — y compris le coût en points du chemin, que PoB calcule
- * lui-même via `AllocNode`.
+ * lui-même.
  *
- * Une évaluation d'arbre coûte environ dix fois une évaluation de gemme
- * (reconstruction complète des chemins). L'algorithme balaie donc les
- * candidats par passes et alloue plusieurs nœuds par passe, plutôt que de
- * tout réévaluer après chaque point dépensé.
+ * Le balayage passe par `calc_batch`, qui s'appuie sur le calculateur
+ * incrémental de PoB : une passe de base par lot, puis un simple recalcul par
+ * candidat. Le tri obtenu sert à classer, pas à conclure — le nœud retenu est
+ * ensuite réellement alloué, ce qui laisse derrière lui un arbre exploitable.
+ * L'algorithme alloue plusieurs nœuds par passe plutôt que de tout réévaluer
+ * après chaque point dépensé.
  */
 export async function optimizeTree(
   engine: PobEngine,
@@ -158,6 +160,67 @@ export async function optimizeTree(
         : chosenMasteries,
     );
 
+  /**
+   * XML de l'arbre courant, servant de base au lot d'une passe.
+   *
+   * Indispensable : les chemins que PoB pré-calcule le sont pour un arbre
+   * donné. Mesurer tous les candidats contre le XML de départ ferait payer à
+   * chacun un chemin qui a pu raccourcir depuis — un notable voisin d'un
+   * nœud fraîchement pris devient bien moins cher.
+   */
+  const specXml = () => {
+    const effects = chosenMasteries.map(([n, e]) => `{${n},${e}}`).join(',');
+    const withNodes = baseXml.replace(
+      /nodes="[^"]*"/,
+      `nodes="${current.allocated.join(',')}"`,
+    );
+    // Un XML importé depuis PoB peut ne pas porter l'attribut du tout : sans
+    // ce repli, les masteries déjà retenues disparaîtraient du lot.
+    return /masteryEffects="/.test(withNodes)
+      ? withNodes.replace(/masteryEffects="[^"]*"/, `masteryEffects="${effects}"`)
+      : withNodes.replace(/<Spec /, `<Spec masteryEffects="${effects}" `);
+  };
+
+  /**
+   * Balaie un lot de candidats via le calculateur incrémental.
+   *
+   * C'est la passe de tri : elle sert à classer, pas à décider. Le candidat
+   * retenu est ensuite réellement alloué par `allocWith`, qui reconstruit le
+   * build — les deux voies donnent les mêmes chiffres, mais seule la seconde
+   * laisse un arbre exploitable derrière elle.
+   */
+  const scanBatch = async (pool: Candidate[]) => {
+    const xml = specXml();
+    // Une mastery ne compte que par l'effet retenu, mais son nœud doit être
+    // alloué comme n'importe quel autre pour que l'effet s'applique.
+    const candidates = pool.map((c) => ({
+      addNodes: [c.mastery ? c.mastery.nodeId : c.node.id],
+      masteries: c.mastery
+        ? ([[c.mastery.nodeId, c.mastery.effect.id]] as MasterySelection[])
+        : undefined,
+    }));
+
+    const out: Array<{ cand: Candidate; stats: Record<string, number | boolean>; cost: number }> = [];
+    // Un lot trop gros bloque le moteur d'un seul tenant et prive la barre de
+    // progression de tout signal.
+    const CHUNK = 64;
+    for (let i = 0; i < candidates.length; i += CHUNK) {
+      const slice = candidates.slice(i, i + CHUNK);
+      const res = await engine.calcBatch(xml, slice);
+      evaluations += slice.length;
+      slice.forEach((_, k) => {
+        const r = res.results[k];
+        if (r?.stats) out.push({ cand: pool[i + k], stats: r.stats, cost: r.cost ?? 0 });
+      });
+      opts.onProgress?.(
+        Math.min(i + CHUNK, candidates.length),
+        candidates.length,
+        `arbre — ${current.pointsUsed}/${opts.budget} pts`,
+      );
+    }
+    return out;
+  };
+
   while (current.pointsUsed < opts.budget) {
     const remaining = opts.budget - current.pointsUsed;
     const remainingAsc = opts.ascBudget - current.ascPointsUsed;
@@ -182,20 +245,13 @@ export async function optimizeTree(
     if (pool.length === 0) break;
 
     const ranking: Array<{ cand: Candidate; ratio: number; gainPercent: number; cost: number }> = [];
-    let done = 0;
 
-    for (const cand of pool) {
-      const res = await allocWith(cand);
-      evaluations++;
-      done++;
-      opts.onProgress?.(done, pool.length, `arbre — ${current.pointsUsed}/${opts.budget} pts`);
-
-      const cost = cand.node.ascendancy
-        ? res.ascPointsUsed - current.ascPointsUsed
-        : res.pointsUsed - current.pointsUsed;
+    // Le lot part de l'arbre courant : le coût renvoyé est donc directement
+    // celui du candidat, chemin compris.
+    for (const { cand, stats, cost } of await scanBatch(pool)) {
       if (cost <= 0) continue;
 
-      const s = score(res.stats, goal);
+      const s = score(stats, goal);
       const gainPercent = currentScore > 0 ? ((s - currentScore) / currentScore) * 100 : 0;
       if (s <= currentScore || gainPercent < opts.minGainPercent) {
         // Inutile de le reproposer : un nœud sans intérêt maintenant le

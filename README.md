@@ -194,6 +194,20 @@ npx tsx src/cli.ts corpus stats "Winter Orb"      # a priori de recherche
 
 Voir `corpus/README.md`.
 
+### Vitesse de recherche
+
+L'optimiseur d'arbre passe par `calc_batch`, qui s'appuie sur le calculateur
+incrémental de PoB (`GetMiscCalculator`) — celui qui alimente ses propres
+infobulles « ce nœud vaudrait tant ». Une passe de base par lot, puis un
+simple recalcul par candidat, au lieu de recharger le XML du build à chaque
+fois. Mesuré sur un arbre de 30 points : **6 min 08 s → 22 s**, même résultat.
+
+Piège à connaître si tu touches à ça : `override.addNodes` ajoute exactement
+les nœuds fournis, **sans** emprunter le chemin qui y mène, là où `AllocNode`
+alloue le chemin entier. Un optimiseur qui raisonne en points dépensés a
+besoin de la seconde sémantique — d'où le dépliage de `node.path`. Sans lui,
+31 candidats sur 40 renvoyaient la valeur de base.
+
 ### Découvrir à quoi un build répond
 
 Le corpus apprend ce que les autres jouent déjà. Ça ne suffit pas : recopier
