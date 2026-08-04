@@ -18,8 +18,19 @@ export interface Probe {
   /** Texte de modificateur, au format que PoB sait lire. */
   mod: string;
   /** Famille, pour regrouper l'affichage. */
-  group: 'offense' | 'defense' | 'utility';
+  group: ProbeGroup;
 }
+
+/**
+ * Les attributs forment une famille à part parce qu'ils ne se rangent ni dans
+ * l'offensif ni dans le défensif : sur un build à empilement, la force est
+ * les deux à la fois, et sur tous les autres elle n'est presque rien. Ce sont
+ * les uniques équipés qui décident — `The Iron Fortress` convertit la force
+ * en dégâts physiques de mêlée, `Pillar of the Caged God` fait dépendre la
+ * vitesse d'attaque de la dextérité et la zone d'effet de l'intelligence.
+ * Aucune règle ne peut le savoir d'avance, la mesure si.
+ */
+export type ProbeGroup = 'offense' | 'defense' | 'attribute' | 'utility';
 
 /**
  * Sondes par défaut.
@@ -65,6 +76,11 @@ export const DEFAULT_PROBES: Probe[] = [
   { key: 'suppression', mod: '+10% chance to Suppress Spell Damage', group: 'defense' },
   { key: 'block', mod: '+10% Chance to Block Attack Damage', group: 'defense' },
   { key: 'lifeRegen', mod: 'Regenerate 2% of Life per second', group: 'defense' },
+
+  { key: 'strength', mod: '+100 to Strength', group: 'attribute' },
+  { key: 'dexterity', mod: '+100 to Dexterity', group: 'attribute' },
+  { key: 'intelligence', mod: '+100 to Intelligence', group: 'attribute' },
+  { key: 'allAttributes', mod: '+50 to all Attributes', group: 'attribute' },
 
   { key: 'mana', mod: '+100 to maximum Mana', group: 'utility' },
   { key: 'reservation', mod: '10% increased Mana Reservation Efficiency', group: 'utility' },
@@ -246,7 +262,7 @@ export async function analyseSensitivity(
     // sur le gain individuel : une stat morte seule est précisément le cas
     // que cette passe existe pour rattraper.
     const combos: Array<[Probe, Probe]> = [];
-    for (const group of ['offense', 'defense'] as const) {
+    for (const group of ['offense', 'defense', 'attribute'] as const) {
       const g = probes.filter((p) => p.group === group);
       for (let i = 0; i < g.length; i++) {
         for (let j = i + 1; j < g.length; j++) combos.push([g[i], g[j]]);

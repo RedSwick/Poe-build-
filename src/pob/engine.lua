@@ -81,6 +81,112 @@ local function collectStats(wanted)
 	return stats
 end
 
+--- Extrait les stats demandées d'une table de sortie quelconque.
+local function statsFrom(out, wanted)
+	local stats = {}
+	for _, key in ipairs(wanted) do
+		local v = out[key]
+		if type(v) == "number" or type(v) == "boolean" then
+			stats[key] = v
+		end
+	end
+	return stats
+end
+
+-- Dernier build chargé, avec son calculateur incrémental.
+local cached = { xml = nil, calcFunc = nil, baseOutput = nil }
+
+--- Évalue plusieurs variantes d'un même build en une seule passe.
+--
+-- `GetMiscCalculator` est le calculateur que PoB utilise lui-même pour ses
+-- infobulles « ce nœud vaudrait tant » : il fait une passe de base complète,
+-- puis chaque variante ne rejoue que le calcul, sur un environnement déjà
+-- monté. Recharger le XML à chaque candidat, comme le fait `tree_alloc`,
+-- refait tout le travail d'analyse et de construction du build pour rien.
+--
+-- Le gain porte aussi sur le transport : un optimiseur teste des centaines de
+-- candidats sur la même base, autant les envoyer d'un coup.
+local function calcBatch(req)
+	local wanted = req.stats
+	if type(wanted) ~= "table" or #wanted == 0 then wanted = DEFAULT_STATS end
+
+	if cached.xml ~= req.xml then
+		loadBuildFromXML(req.xml, "pba-batch")
+		includeAllInFullDps()
+		build.calcsTab:BuildOutput()
+		local f, base = build.calcsTab:GetMiscCalculator()
+		if not f then return { ok = false, error = "calculateur incrémental indisponible" } end
+		cached = { xml = req.xml, calcFunc = f, baseOutput = base }
+	end
+
+	-- Les nœuds sont désignés par identifiant côté client ; l'override de PoB
+	-- attend les objets eux-mêmes en clés.
+	--
+	-- `addNodes` ajoute exactement les nœuds fournis, sans rien relier :
+	-- contrairement à `AllocNode`, il n'emprunte pas le chemin qui mène au
+	-- nœud. Pour un optimiseur qui raisonne en points dépensés, c'est le
+	-- chemin complet qui compte — un notable à six nœuds de distance coûte
+	-- sept points et rapporte aussi ce que portent les six. PoB pré-calcule ce
+	-- chemin dans `node.path`, il suffit de le déplier.
+	local function nodeSet(ids, withPath)
+		if type(ids) ~= "table" or #ids == 0 then return nil end
+		local set = {}
+		for _, id in ipairs(ids) do
+			local n = build.spec.nodes[id]
+			if n then
+				set[n] = true
+				if withPath and n.path then
+					for _, p in ipairs(n.path) do set[p] = true end
+				end
+			end
+		end
+		return set
+	end
+
+	local results = {}
+	for _, cand in ipairs(req.candidates or {}) do
+		local withPath = req.withPath ~= false
+		local added = nodeSet(cand.addNodes, withPath)
+		local override = {
+			addNodes = added,
+			removeNodes = nodeSet(cand.removeNodes, false),
+		}
+
+		-- Points réellement dépensés : les nœuds ajoutés qui n'étaient pas
+		-- déjà alloués, chemin compris.
+		local cost = 0
+		for n in pairs(added or {}) do
+			if not build.spec.allocNodes[n.id] then cost = cost + 1 end
+		end
+
+		-- Les sélections de mastery ne passent pas par l'override : on les
+		-- pose le temps du calcul, puis on remet l'état d'origine.
+		local saved
+		if type(cand.masteries) == "table" and #cand.masteries > 0 then
+			saved = {}
+			for k, v in pairs(build.spec.masterySelections or {}) do saved[k] = v end
+			for _, m in ipairs(cand.masteries) do
+				build.spec.masterySelections[m[1]] = m[2]
+			end
+		end
+
+		local ok, out = pcall(cached.calcFunc, override, true)
+		if saved then build.spec.masterySelections = saved end
+
+		if ok then
+			table.insert(results, { stats = statsFrom(out, wanted), cost = cost })
+		else
+			table.insert(results, { error = tostring(out) })
+		end
+	end
+
+	return {
+		ok = true,
+		base = statsFrom(cached.baseOutput, wanted),
+		results = results,
+	}
+end
+
 --- Charge un build depuis son XML et force un recalcul complet.
 local function evaluate(req)
 	local wanted = req.stats
@@ -347,6 +453,27 @@ local function uniques(req)
 	return { ok = true, uniques = out }
 end
 
+--- Identifie un objet à partir de son texte brut.
+--
+-- PoB sait déjà lire le format copier-coller du jeu et en déduire la base, le
+-- type et donc l'emplacement. Redériver ça côté TypeScript reviendrait à
+-- maintenir une table de toutes les bases du jeu en double.
+local function itemInfo(req)
+	local ok, item = pcall(function()
+		return new("Item", req.raw)
+	end)
+	if not ok or not item then
+		return { ok = false, error = "objet illisible" }
+	end
+	return {
+		ok = true,
+		name = item.name,
+		base = item.baseName,
+		type = item.type,
+		rarity = item.rarity,
+	}
+end
+
 --- Exporte le pool de mods explicites et les bases d'objets.
 --
 -- PoB embarque la base de mods complète du jeu : préfixes, suffixes, niveau
@@ -467,10 +594,12 @@ local HANDLERS = {
 	ping = function() return { ok = true, pong = true } end,
 	version = version,
 	eval = evaluate,
+	calc_batch = calcBatch,
 	gems = gems,
 	tree_candidates = treeCandidates,
 	tree_alloc = treeAlloc,
 	uniques = uniques,
+	item_info = itemInfo,
 	item_mods = itemMods,
 	skills = skills,
 }

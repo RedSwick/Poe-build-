@@ -285,7 +285,9 @@
     "missed": "Ce qu'une mesure stat par stat aurait raté",
     "missedRow": "une dose {marginal} → investi {atScale}",
     "missedNone": "Rien à signaler : sur ce build, chaque statistique vaut à peu près ce que sa première dose laisse croire.",
-    "missedNote": "Ces axes sont sous-évalués tant qu'on les juge au marginal. C'est le piège classique du critique : la gemme ne porte ni le tag crit ni le tag vitesse, et une dose isolée ne montre rien — l'axe n'existe qu'investi."
+    "missedNote": "Ces axes sont sous-évalués tant qu'on les juge au marginal. C'est le piège classique du critique : la gemme ne porte ni le tag crit ni le tag vitesse, et une dose isolée ne montre rien — l'axe n'existe qu'investi.",
+    "attribute": "Attributs",
+    "equipped": "Équipé — {slot} : {name}"
   },
   "probe": {
     "attackSpeed": "Vitesse d'attaque +10 %",
@@ -323,6 +325,10 @@
     "block": "Blocage d'attaque +10 %",
     "lifeRegen": "Régénération de vie 2 %",
     "mana": "Mana maximum +100",
-    "reservation": "Efficacité de réservation +10 %"
+    "reservation": "Efficacité de réservation +10 %",
+    "strength": "Force +100",
+    "dexterity": "Dextérité +100",
+    "intelligence": "Intelligence +100",
+    "allAttributes": "Tous attributs +50"
   }
 }

@@ -285,7 +285,9 @@
     "missed": "What a stat-by-stat measurement would have missed",
     "missedRow": "one dose {marginal} → invested {atScale}",
     "missedNone": "Nothing to report: on this build every stat is worth roughly what its first dose suggests.",
-    "missedNote": "These axes are undervalued as long as they are judged at the margin. This is the classic crit trap: the gem carries neither the crit nor the speed tag, and a single dose shows nothing — the axis only exists once invested."
+    "missedNote": "These axes are undervalued as long as they are judged at the margin. This is the classic crit trap: the gem carries neither the crit nor the speed tag, and a single dose shows nothing — the axis only exists once invested.",
+    "attribute": "Attributes",
+    "equipped": "Equipped — {slot}: {name}"
   },
   "probe": {
     "attackSpeed": "Attack speed +10%",
@@ -323,6 +325,10 @@
     "block": "Attack block +10%",
     "lifeRegen": "Life regeneration 2%",
     "mana": "Maximum mana +100",
-    "reservation": "Mana reservation efficiency +10%"
+    "reservation": "Mana reservation efficiency +10%",
+    "strength": "Strength +100",
+    "dexterity": "Dexterity +100",
+    "intelligence": "Intelligence +100",
+    "allAttributes": "All attributes +50"
   }
 }

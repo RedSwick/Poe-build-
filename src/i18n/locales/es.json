@@ -285,7 +285,9 @@
     "missed": "Lo que una medición estadística por estadística habría pasado por alto",
     "missedRow": "una dosis {marginal} → invertido {atScale}",
     "missedNone": "Nada que señalar: en esta build cada estadística vale aproximadamente lo que sugiere su primera dosis.",
-    "missedNote": "Estos ejes están infravalorados mientras se juzguen en el margen. Es la trampa clásica del crítico: la gema no lleva ni la etiqueta de crítico ni la de velocidad, y una dosis aislada no muestra nada — el eje solo existe una vez invertido."
+    "missedNote": "Estos ejes están infravalorados mientras se juzguen en el margen. Es la trampa clásica del crítico: la gema no lleva ni la etiqueta de crítico ni la de velocidad, y una dosis aislada no muestra nada — el eje solo existe una vez invertido.",
+    "attribute": "Atributos",
+    "equipped": "Equipado — {slot}: {name}"
   },
   "probe": {
     "attackSpeed": "Velocidad de ataque +10 %",
@@ -323,6 +325,10 @@
     "block": "Bloqueo de ataque +10 %",
     "lifeRegen": "Regeneración de vida 2 %",
     "mana": "Maná máximo +100",
-    "reservation": "Eficiencia de reserva de maná +10 %"
+    "reservation": "Eficiencia de reserva de maná +10 %",
+    "strength": "Fuerza +100",
+    "dexterity": "Destreza +100",
+    "intelligence": "Inteligencia +100",
+    "allAttributes": "Todos los atributos +50"
   }
 }

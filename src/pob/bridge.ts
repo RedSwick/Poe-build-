@@ -225,6 +225,52 @@ export class PobEngine {
     return this.request({ action: 'uniques', types });
   }
 
+  /**
+   * Évalue plusieurs variantes d'un même build en un seul aller-retour.
+   *
+   * Utilise le calculateur incrémental de PoB : une passe de base, puis
+   * chaque candidat ne rejoue que le calcul. `treeAlloc` recharge le XML à
+   * chaque appel, ce qui refait l'analyse complète du build pour rien.
+   */
+  async calcBatch(
+    xml: string,
+    candidates: Array<{
+      addNodes?: number[];
+      removeNodes?: number[];
+      masteries?: MasterySelection[];
+    }>,
+    stats?: string[],
+    options: { withPath?: boolean } = {},
+  ): Promise<{
+    base: Record<string, number | boolean>;
+    results: Array<{
+      stats?: Record<string, number | boolean>;
+      /** Points dépensés, chemin compris. */
+      cost?: number;
+      error?: string;
+    }>;
+  }> {
+    return this.request({
+      action: 'calc_batch',
+      xml,
+      candidates,
+      stats,
+      withPath: options.withPath !== false,
+    });
+  }
+
+  /**
+   * Identifie un objet depuis son texte copier-coller.
+   *
+   * C'est PoB qui lit la base et en déduit le type : maintenir une table des
+   * bases du jeu de notre côté ferait doublon avec la sienne.
+   */
+  async itemInfo(raw: string): Promise<{
+    name: string; base: string; type: string; rarity: string;
+  }> {
+    return this.request({ action: 'item_info', raw });
+  }
+
   /** Exporte le pool de mods explicites et les bases d'objets. */
   async itemMods(): Promise<{ mods: any[]; bases: any[] }> {
     return this.request({ action: 'item_mods' });

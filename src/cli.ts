@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
+import { existsSync, readFileSync } from 'node:fs';
 import { PobEngine } from './pob/bridge.js';
 import { loadGemIndex } from './data/gems.js';
 import { resolveGoal } from './domain/goals.js';
@@ -17,7 +18,7 @@ import { createTranslator, availableLocales } from './i18n/index.js';
 import type { BuildDraft } from './domain/types.js';
 import { fetchBuildFromUrlOrCode, summarizeBuildXml } from './pob/importCode.js';
 import { auditBuild, snapshot } from './domain/audit.js';
-import { loadUniqueIndex } from './data/uniques.js';
+import { loadUniqueIndex, TYPE_TO_SLOTS } from './data/uniques.js';
 import { optimizeGear } from './domain/gearOptimizer.js';
 import { createPriceFilter, type BudgetTier } from './domain/budget.js';
 import { loadPriceIndex, DEFAULT_LEAGUE, type PriceIndex } from './trade/ninja.js';
@@ -47,6 +48,36 @@ function combatFromOpts(opts: any): CombatConfig {
     enduranceCharges: Boolean(opts.enduranceCharges),
     enemyCursed: Boolean(opts.enemyCursed),
   };
+}
+
+/**
+ * Équipe des objets donnés en texte brut ou en chemin de fichier.
+ *
+ * L'emplacement n'est pas demandé à l'utilisateur : PoB lit la base de
+ * l'objet et en déduit son type, ce qui évite d'entretenir une table de
+ * toutes les bases du jeu en double de la sienne.
+ */
+async function resolveItems(
+  pool: PobPool,
+  entries: string[] | undefined,
+  weapon?: string,
+): Promise<Array<{ slot: string; raw: string; name: string }>> {
+  const raws = [...(entries ?? [])].map((e) =>
+    existsSync(e) ? readFileSync(e, 'utf8') : e,
+  );
+  const out: Array<{ slot: string; raw: string; name: string }> = [];
+  if (weapon) out.push({ slot: 'Weapon 1', raw: weapon, name: weapon.split('\n')[1] ?? weapon });
+
+  const used = new Set(out.map((o) => o.slot));
+  for (const raw of raws) {
+    const info = await pool.itemInfo(raw);
+    const candidates = TYPE_TO_SLOTS[info.type?.toLowerCase() ?? ''] ?? ['Body Armour'];
+    // Anneaux et armes occupent deux emplacements : on prend le premier libre.
+    const slot = candidates.find((s) => !used.has(s)) ?? candidates[0];
+    used.add(slot);
+    out.push({ slot, raw, name: info.name || info.base });
+  }
+  return out;
 }
 
 /** Résultat neutre quand l'optimisation des supports est désactivée. */
@@ -701,6 +732,7 @@ program
   .option('-l, --level <n>', 'niveau', '90')
   .option('--supports <list>', 'supports, séparés par des virgules')
   .option('--weapon <text>', 'texte brut d\'une arme à équiper')
+  .option('--item <textOrFile...>', 'objets à équiper : texte brut ou chemin de fichier')
   .option('--enemy <kind>', 'none | boss | pinnacle | uber', 'pinnacle')
   .option('--pairs', 'cherche aussi les couples de stats qui se renforcent')
   .option('--scale <n>', 'doses appliquées pour la mesure investie', '6')
@@ -725,13 +757,16 @@ program
       }
 
       const combat = combatFromOpts(opts);
+      const items = await resolveItems(pool, opts.item, opts.weapon);
+      for (const it of items) log(t('sensitivity.equipped', { slot: it.slot, name: it.name }));
+
       const draft: BuildDraft = {
         className: opts.class,
         ascendancy: opts.ascendancy,
         ascendClassId: 1,
         level: Number(opts.level),
         config: toConfigInputs(combat),
-        items: opts.weapon ? [{ slot: 'Weapon 1', raw: opts.weapon }] : [],
+        items: items.map(({ slot, raw }) => ({ slot, raw })),
         groups: [{
           slot: 'Body Armour',
           main: { name: mainGem.name, level: 20, quality: 20 },
@@ -776,7 +811,7 @@ program
       console.log(`\x1b[2m${t('sensitivity.header', { scale: res.scale })}\x1b[0m`);
 
       const top = Number(opts.top);
-      for (const group of ['offense', 'defense', 'utility'] as const) {
+      for (const group of ['offense', 'attribute', 'defense', 'utility'] as const) {
         const rows = res.axes.filter((a) => a.group === group).slice(0, top);
         if (rows.length === 0) continue;
         console.log(`\n\x1b[1m${t(`sensitivity.${group}`)}\x1b[0m`);

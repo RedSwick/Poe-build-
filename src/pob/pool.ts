@@ -75,6 +75,14 @@ export class PobPool {
     return this.run((e) => e.uniques(types));
   }
 
+  itemInfo(raw: string) {
+    return this.run((e) => e.itemInfo(raw));
+  }
+
+  calcBatch(...args: Parameters<PobEngine['calcBatch']>) {
+    return this.run((e) => e.calcBatch(...args));
+  }
+
   itemMods() {
     return this.run((e) => e.itemMods());
   }
