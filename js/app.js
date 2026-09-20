@@ -42,6 +42,7 @@ function saveProgress(p){
 /* ---------- Routeur ---------- */
 const ROUTES = {
   accueil: renderAccueil,
+  dev: renderDev,
   actu: renderActu,
   concepts: renderConcepts,
   comparatif: renderComparatif,
@@ -54,11 +55,12 @@ const ROUTES = {
 };
 
 function navigate(){
-  const hash = (location.hash || "#accueil").replace("#","");
-  const route = ROUTES[hash] ? hash : "accueil";
+  const raw = (location.hash || "#accueil").replace("#","");
+  const [routeKey, ...params] = raw.split("/");
+  const route = ROUTES[routeKey] ? routeKey : "accueil";
   sidebarLinks.forEach(a=> a.classList.toggle("active", a.dataset.nav === route));
   content.innerHTML = "";
-  ROUTES[route]();
+  ROUTES[route](params);
   window.scrollTo({top:0, behavior:"instant"});
 }
 window.addEventListener("hashchange", navigate);
@@ -92,6 +94,7 @@ function renderAccueil(){
   `));
 
   const cards = [
+    {href:"#dev", emoji:"🏆", titre:"Parcours Dev", desc:"Façon Duolingo : apprends étape par étape à créer un site, puis une appli, puis un jeu — avec Claude, en révisant ce que tu as appris."},
     {href:"#actu", emoji:"📰", titre:"Actualités & frise", desc:"Où en est l'IA aujourd'hui, repères historiques, et où suivre les vraies nouveautés."},
     {href:"#concepts", emoji:"📚", titre:"Comprendre l'IA", desc:"Tous les concepts et mots compliqués expliqués simplement, avec des analogies."},
     {href:"#comparatif", emoji:"⚖️", titre:"Comparatif des IA", desc:"ChatGPT, Claude, Gemini, Mistral... gratuit ou payant, pour quoi faire ?"},
@@ -111,6 +114,304 @@ function renderAccueil(){
         <p>${c.desc}</p>
       </a>
     `));
+  });
+}
+
+/* =========================================================
+   1.5 PARCOURS DEV — façon Duolingo (XP, streak, révision espacée)
+   ========================================================= */
+const DEV_XP = { lecon: 10, pratique: 25, defi: 40 };
+
+function todayStr(){
+  return new Date().toISOString().slice(0,10);
+}
+function daysBetween(a, b){
+  return Math.round((new Date(b) - new Date(a)) / 86400000);
+}
+function getDevProgress(){
+  try{
+    return JSON.parse(localStorage.getItem("ia-academy-devpath")) || { xp:0, streak:{count:0,lastDate:null}, completed:{}, srs:{} };
+  }catch(e){
+    return { xp:0, streak:{count:0,lastDate:null}, completed:{}, srs:{} };
+  }
+}
+function saveDevProgress(p){
+  try{ localStorage.setItem("ia-academy-devpath", JSON.stringify(p)); }catch(e){}
+}
+function flattenLessons(){
+  const flat = [];
+  DEV_PATH.forEach((monde, mondeIdx)=>{
+    monde.lecons.forEach((lecon, leconIdx)=>{
+      flat.push({ monde, mondeIdx, lecon, leconIdx });
+    });
+  });
+  return flat;
+}
+function isLessonUnlocked(globalIdx, progress){
+  if(globalIdx === 0) return true;
+  const flat = flattenLessons();
+  const prev = flat[globalIdx - 1];
+  return !!progress.completed[prev.lecon.id];
+}
+function lessonXp(lecon){
+  if(lecon.defi) return DEV_XP.defi;
+  if(lecon.pratique) return DEV_XP.pratique;
+  return DEV_XP.lecon;
+}
+function updateStreak(progress){
+  const today = todayStr();
+  if(progress.streak.lastDate === today) return;
+  if(progress.streak.lastDate && daysBetween(progress.streak.lastDate, today) === 1){
+    progress.streak.count += 1;
+  }else{
+    progress.streak.count = 1;
+  }
+  progress.streak.lastDate = today;
+}
+function scheduleReview(progress, leconId, success){
+  const today = todayStr();
+  const prev = progress.srs[leconId];
+  let interval = 1;
+  if(success){
+    interval = prev ? Math.min(prev.interval * 2, 30) : 1;
+  }
+  const due = new Date();
+  due.setDate(due.getDate() + interval);
+  progress.srs[leconId] = { interval, due: due.toISOString().slice(0,10) };
+}
+function completeLesson(leconId, xp, quizCorrect){
+  const progress = getDevProgress();
+  const alreadyDone = !!progress.completed[leconId];
+  if(!alreadyDone){
+    progress.xp += xp;
+    progress.completed[leconId] = true;
+  }
+  updateStreak(progress);
+  scheduleReview(progress, leconId, quizCorrect);
+  saveDevProgress(progress);
+  return progress;
+}
+function getDueReviews(progress){
+  const today = todayStr();
+  const flat = flattenLessons();
+  return flat
+    .filter(({lecon}) => progress.completed[lecon.id] && progress.srs[lecon.id] && progress.srs[lecon.id].due <= today)
+    .map(({monde, lecon}) => ({ monde, lecon }));
+}
+
+function renderDev(params){
+  const mondeId = params && params[0];
+  const leconId = params && params[1];
+  if(mondeId && leconId){
+    renderDevLecon(mondeId, leconId);
+  }else if(mondeId){
+    renderDevMonde(mondeId);
+  }else{
+    renderDevDashboard();
+  }
+}
+
+function renderDevDashboard(){
+  const progress = getDevProgress();
+  const flat = flattenLessons();
+  const totalLecons = flat.length;
+  const doneCount = Object.keys(progress.completed).length;
+  const dueReviews = getDueReviews(progress);
+
+  content.appendChild(el(`<h2 class="section-title">🏆 Parcours Dev</h2>`));
+  content.appendChild(el(`<p class="section-sub">Apprends étape par étape à construire un site, puis une application, puis un jeu — avec l'aide de Claude à chaque étape pratique. Les leçons se débloquent une par une, et reviennent en révision pour que tu n'oublies rien.</p>`));
+
+  content.appendChild(el(`
+    <div class="grid grid-3" style="margin-bottom:20px;">
+      <div class="card" style="margin-bottom:0; text-align:center;">
+        <div style="font-size:1.6rem; font-weight:700;">⭐ ${progress.xp}</div>
+        <div style="color:var(--text-muted); font-size:.85rem;">Points d'XP</div>
+      </div>
+      <div class="card" style="margin-bottom:0; text-align:center;">
+        <div style="font-size:1.6rem; font-weight:700;">🔥 ${progress.streak.count}</div>
+        <div style="color:var(--text-muted); font-size:.85rem;">Jour${progress.streak.count>1?"s":""} de suite</div>
+      </div>
+      <div class="card" style="margin-bottom:0; text-align:center;">
+        <div style="font-size:1.6rem; font-weight:700;">${doneCount} / ${totalLecons}</div>
+        <div style="color:var(--text-muted); font-size:.85rem;">Leçons terminées</div>
+      </div>
+    </div>
+  `));
+
+  if(dueReviews.length > 0){
+    content.appendChild(el(`<div class="card" id="reviewCard"><h3>🔁 À réviser aujourd'hui (${dueReviews.length})</h3><p class="section-sub" style="margin-bottom:12px;">Ces leçons reviennent pour que tu ne les oublies pas. Ça prend 1 minute chacune.</p><div id="reviewList" class="grid grid-2"></div></div>`));
+    const reviewList = document.getElementById("reviewList");
+    dueReviews.forEach(({monde, lecon})=>{
+      reviewList.appendChild(el(`
+        <a class="nav-card" href="#dev/${monde.id}/${lecon.id}" style="margin-bottom:0;">
+          <span class="emoji">${lecon.emoji || "🔁"}</span>
+          <h3>${lecon.titre}</h3>
+          <p>${monde.emoji} ${monde.titre}</p>
+        </a>
+      `));
+    });
+  }
+
+  content.appendChild(el(`<h3 style="margin-top:8px;">🗺️ Ton parcours</h3>`));
+  const worldsDiv = el(`<div class="grid grid-2" id="worldsGrid"></div>`);
+  content.appendChild(worldsDiv);
+
+  DEV_PATH.forEach((monde, mondeIdx)=>{
+    const mondeDone = monde.lecons.filter(l=> progress.completed[l.id]).length;
+    const flatFirstIdx = flat.findIndex(f => f.monde.id === monde.id);
+    const unlocked = isLessonUnlocked(flatFirstIdx, progress);
+    const pct = Math.round((mondeDone / monde.lecons.length) * 100);
+    const card = el(`
+      <div class="card" style="margin-bottom:0; opacity:${unlocked ? "1" : "0.55"};">
+        <h3 style="margin:0 0 6px;">${monde.emoji} ${monde.titre} ${!unlocked ? "🔒" : (pct===100 ? "✅" : "")}</h3>
+        <p style="margin:0 0 10px; color:var(--text-muted); font-size:.88rem;">${monde.description}</p>
+        <div style="background:var(--border); border-radius:20px; height:8px; overflow:hidden; margin-bottom:10px;">
+          <div style="background:var(--accent); height:100%; width:${pct}%;"></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:.82rem; color:var(--text-muted);">${mondeDone} / ${monde.lecons.length} leçons</span>
+          ${unlocked ? `<a class="btn small" href="#dev/${monde.id}">${mondeDone>0 ? "Continuer" : "Commencer"} →</a>` : `<span style="font-size:.8rem; color:var(--text-muted);">Termine le monde précédent</span>`}
+        </div>
+      </div>
+    `);
+    worldsDiv.appendChild(card);
+  });
+}
+
+function renderDevMonde(mondeId){
+  const progress = getDevProgress();
+  const monde = DEV_PATH.find(m => m.id === mondeId);
+  if(!monde){ renderDevDashboard(); return; }
+  const flat = flattenLessons();
+
+  content.appendChild(el(`<a href="#dev" style="color:var(--accent); font-size:.85rem; text-decoration:none;">← Retour au parcours</a>`));
+  content.appendChild(el(`<h2 class="section-title" style="margin-top:10px;">${monde.emoji} ${monde.titre}</h2>`));
+  content.appendChild(el(`<p class="section-sub">${monde.description}</p>`));
+
+  const list = el(`<div id="leconList"></div>`);
+  content.appendChild(list);
+
+  monde.lecons.forEach((lecon, leconIdx)=>{
+    const globalIdx = flat.findIndex(f => f.lecon.id === lecon.id);
+    const unlocked = isLessonUnlocked(globalIdx, progress);
+    const done = !!progress.completed[lecon.id];
+    const statusIcon = done ? "✅" : (unlocked ? "🔓" : "🔒");
+    const card = el(`
+      <div class="card" style="display:flex; align-items:center; gap:14px; opacity:${unlocked ? "1" : "0.55"};">
+        <span class="step-num" style="width:34px; height:34px; font-size:1rem;">${leconIdx+1}</span>
+        <div style="flex:1;">
+          <div style="font-weight:600;">${lecon.emoji} ${lecon.titre} ${lecon.defi ? '<span class="tag">défi</span>' : ""}</div>
+          <div style="font-size:.8rem; color:var(--text-muted);">+${lessonXp(lecon)} XP ${lecon.pratique ? "· avec exercice pratique" : ""}</div>
+        </div>
+        <div style="font-size:1.2rem;">${statusIcon}</div>
+        ${unlocked ? `<a class="btn small" href="#dev/${monde.id}/${lecon.id}">${done ? "Revoir" : "Ouvrir"}</a>` : ""}
+      </div>
+    `);
+    list.appendChild(card);
+  });
+}
+
+function renderDevLecon(mondeId, leconId){
+  const progress = getDevProgress();
+  const monde = DEV_PATH.find(m => m.id === mondeId);
+  const lecon = monde && monde.lecons.find(l => l.id === leconId);
+  if(!monde || !lecon){ renderDevDashboard(); return; }
+
+  const flat = flattenLessons();
+  const globalIdx = flat.findIndex(f => f.lecon.id === lecon.id);
+  const unlocked = isLessonUnlocked(globalIdx, progress);
+  if(!unlocked){
+    content.appendChild(el(`<p class="section-sub">🔒 Cette leçon n'est pas encore débloquée. <a href="#dev/${monde.id}" style="color:var(--accent);">Retourne au monde ${monde.titre}</a>.</p>`));
+    return;
+  }
+  const alreadyDone = !!progress.completed[lecon.id];
+
+  content.appendChild(el(`<a href="#dev/${monde.id}" style="color:var(--accent); font-size:.85rem; text-decoration:none;">← Retour à « ${monde.titre} »</a>`));
+  content.appendChild(el(`<h2 class="section-title" style="margin-top:10px;">${lecon.emoji} ${lecon.titre}</h2>`));
+  content.appendChild(el(`<p class="card">${lecon.lecon}</p>`));
+
+  // Quiz
+  let quizCorrect = false;
+  const quizCard = el(`
+    <div class="card">
+      <h4 style="margin:0 0 10px;">❓ Vérifie ta compréhension</h4>
+      <div class="quiz-q">${lecon.quiz.q}</div>
+      <div class="quiz-options"></div>
+      <div class="quiz-exp" style="display:none;"></div>
+    </div>
+  `);
+  content.appendChild(quizCard);
+  const optsDiv = quizCard.querySelector(".quiz-options");
+  const expDiv = quizCard.querySelector(".quiz-exp");
+  let quizDone = false;
+  lecon.quiz.options.forEach((opt, oi)=>{
+    const optEl = el(`<div class="quiz-option">${opt}</div>`);
+    optEl.addEventListener("click", ()=>{
+      if(quizDone) return;
+      quizDone = true;
+      const isCorrect = oi === lecon.quiz.r;
+      quizCorrect = isCorrect;
+      optEl.classList.add(isCorrect ? "correct" : "wrong");
+      if(!isCorrect) optsDiv.children[lecon.quiz.r].classList.add("correct");
+      expDiv.style.display = "block";
+      expDiv.textContent = "💡 " + lecon.quiz.exp;
+      finishBtn.disabled = false;
+    });
+    optsDiv.appendChild(optEl);
+  });
+
+  // Pratique (optionnelle)
+  if(lecon.pratique){
+    const pratiqueCard = el(`
+      <div class="card">
+        <h4 style="margin:0 0 10px;">🛠️ Exercice pratique avec Claude</h4>
+        <p style="color:var(--text-muted); margin:0 0 12px;">${lecon.pratique.consigne}</p>
+        <div class="output-box">${escapeHtml(lecon.pratique.prompt)}</div>
+        <button class="btn small secondary" id="copyPratiqueBtn" style="margin-top:10px;">📋 Copier le prompt</button>
+        <div class="checklist" style="margin-top:14px;"></div>
+      </div>
+    `);
+    content.appendChild(pratiqueCard);
+    pratiqueCard.querySelector("#copyPratiqueBtn").addEventListener("click", (e)=>{
+      navigator.clipboard.writeText(lecon.pratique.prompt).then(()=>{
+        const old = e.target.textContent;
+        e.target.textContent = "✅ Copié !";
+        setTimeout(()=> e.target.textContent = old, 1500);
+      }).catch(()=>{});
+    });
+    const checklistDiv = pratiqueCard.querySelector(".checklist");
+    const genericProgress = getProgress();
+    lecon.pratique.checklist.forEach((item, ci)=>{
+      const key = `dev_${lecon.id}_${ci}`;
+      const checked = genericProgress[key] ? "checked" : "";
+      const label = el(`<label><input type="checkbox" ${checked}> <span>${item}</span></label>`);
+      label.querySelector("input").addEventListener("change", (ev)=>{
+        const p = getProgress();
+        p[key] = ev.target.checked;
+        saveProgress(p);
+      });
+      checklistDiv.appendChild(label);
+    });
+  }
+
+  // Bouton de fin de leçon
+  const finishWrap = el(`<div class="card" style="text-align:center;"></div>`);
+  const finishBtn = el(`<button class="btn" ${alreadyDone ? "" : "disabled"}>${alreadyDone ? "🔁 Revalider cette leçon" : "✅ Terminer la leçon (réponds au quiz d'abord)"}</button>`);
+  finishWrap.appendChild(finishBtn);
+  content.appendChild(finishWrap);
+
+  finishBtn.addEventListener("click", ()=>{
+    const xp = lessonXp(lecon);
+    const reviewSuccess = quizDone ? quizCorrect : true;
+    completeLesson(lecon.id, xp, reviewSuccess);
+    const nextLesson = flat[globalIdx + 1];
+    finishWrap.innerHTML = `
+      <p style="font-weight:700; color:var(--success); margin:0 0 12px;">🎉 Leçon validée ! +${xp} XP</p>
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <a class="btn secondary" href="#dev/${monde.id}">← Retour au monde</a>
+        ${nextLesson ? `<a class="btn" href="#dev/${nextLesson.monde.id}/${nextLesson.lecon.id}">Leçon suivante →</a>` : `<a class="btn" href="#dev">Voir le parcours complet 🏆</a>`}
+      </div>
+    `;
   });
 }
 

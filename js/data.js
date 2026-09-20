@@ -753,3 +753,381 @@ const RESSOURCES_APPRENTISSAGE = [
   { nom: "Documentation Anthropic — Prompt engineering", url: "https://docs.anthropic.com", desc: "Guide officiel et très complet sur l'art du prompt engineering avec Claude." },
   { nom: "Kaggle", url: "https://www.kaggle.com", desc: "Plateforme de compétitions de data science, avec des mini-cours gratuits et des jeux de données réels." }
 ];
+
+/* =========================================================
+   14. PARCOURS DEV — façon Duolingo
+   Un monde = un "chapitre" (site, appli, jeu...). Chaque monde
+   contient des leçons de difficulté croissante. Chaque leçon a :
+   - un texte pédagogique court
+   - un quiz (sert aussi à la révision espacée / SRS)
+   - éventuellement une partie "pratique" : un prompt à donner à
+     Claude pour avancer concrètement sur un vrai projet.
+   ========================================================= */
+const DEV_PATH = [
+  {
+    id: "monde1",
+    emoji: "🌐",
+    titre: "Les bases du web (HTML)",
+    description: "Tu vas construire ta toute première page web, brique par brique, avec l'aide de Claude.",
+    lecons: [
+      {
+        id: "m1l1",
+        titre: "Qu'est-ce qu'un site web ?",
+        emoji: "🧱",
+        lecon: "Un site web, c'est un ensemble de fichiers (au minimum un fichier HTML) que ton navigateur lit et transforme en page visuelle. Le HTML décrit le contenu (« ceci est un titre », « ceci est un paragraphe »), un peu comme le squelette d'une maison avant la décoration.",
+        quiz: { q: "Que décrit principalement le langage HTML ?", options:["Les couleurs et le style", "La structure et le contenu d'une page", "L'interactivité au clic", "La base de données du site"], r:1, exp:"HTML = HyperText Markup Language. Il structure le contenu (titres, textes, images...), pas le style ni le comportement." },
+        pratique: null
+      },
+      {
+        id: "m1l2",
+        titre: "La structure d'une page HTML",
+        emoji: "🏗️",
+        lecon: "Une page HTML commence toujours par une structure de base : <!DOCTYPE html>, puis <html>, qui contient <head> (infos invisibles comme le titre de l'onglet) et <body> (tout ce qui est visible : textes, images, boutons...).",
+        quiz: { q: "Où doit-on écrire le texte visible par le visiteur du site ?", options:["Dans <head>", "Dans <body>", "Dans <!DOCTYPE>", "Dans le nom du fichier"], r:1, exp:"Tout le contenu visible va dans <body>. <head> contient des infos techniques invisibles (titre d'onglet, liens vers le CSS...)." },
+        pratique: null
+      },
+      {
+        id: "m1l3",
+        titre: "Titres, paragraphes et listes",
+        emoji: "📝",
+        lecon: "Les balises <h1> à <h6> créent des titres (du plus important au moins important), <p> crée un paragraphe, et <ul>/<ol> avec <li> créent des listes (à puces ou numérotées).",
+        quiz: { q: "Quelle balise utiliser pour LE titre principal d'une page ?", options:["<h1>", "<h6>", "<p>", "<li>"], r:0, exp:"<h1> est le titre le plus important, à n'utiliser qu'une fois par page idéalement. <h6> est le moins important." },
+        pratique: {
+          consigne: "Premier vrai exercice : demande à Claude de créer ta toute première page HTML, un « à propos de moi ».",
+          prompt: "Crée-moi un projet simple avec un fichier index.html contenant une page \"À propos de moi\" : un titre h1 avec mon prénom, un paragraphe qui me présente en 2-3 phrases, et une liste à puces de 3 choses que j'aime. Pas de CSS pour l'instant, juste du HTML propre et bien structuré. Explique-moi ensuite chaque balise que tu as utilisée.",
+          checklist: ["Le fichier index.html s'ouvre bien dans le navigateur", "Je comprends à quoi sert chaque balise utilisée", "J'ai un titre h1 et au moins un paragraphe et une liste"]
+        }
+      },
+      {
+        id: "m1l4",
+        titre: "Liens et images",
+        emoji: "🔗",
+        lecon: "La balise <a href=\"...\"> crée un lien cliquable, et <img src=\"...\" alt=\"...\"> affiche une image. L'attribut alt est important : il décrit l'image pour les personnes malvoyantes et s'affiche si l'image ne charge pas.",
+        quiz: { q: "À quoi sert l'attribut alt sur une image ?", options:["À changer la couleur de l'image", "À décrire l'image pour l'accessibilité", "À agrandir l'image", "À la rendre cliquable"], r:1, exp:"alt fournit une description textuelle de l'image, lue par les lecteurs d'écran et affichée si l'image ne charge pas." },
+        pratique: {
+          consigne: "Demande à Claude d'enrichir ta page avec un lien et une image.",
+          prompt: "Sur mon fichier index.html existant, ajoute une photo (utilise une image de placeholder si je n'en fournis pas) avec un attribut alt bien rempli, et un lien vers un site que j'aime, qui s'ouvre dans un nouvel onglet. Explique-moi l'attribut target=\"_blank\".",
+          checklist: ["Une image s'affiche avec une description alt", "Le lien s'ouvre bien dans un nouvel onglet", "Je comprends ce que fait target=\"_blank\""]
+        }
+      },
+      {
+        id: "m1l5",
+        titre: "Défi : ta page complète",
+        emoji: "🏆",
+        defi: true,
+        lecon: "Il est temps de rassembler tout ce que tu as appris dans ce monde : titres, paragraphes, listes, liens et images, dans une seule page bien organisée.",
+        quiz: { q: "Dans quel ordre logique organise-t-on en général le contenu d'une page HTML ?", options:["Aléatoirement", "Du plus important/général au plus spécifique (titre, présentation, détails)", "Toujours les images en premier", "Cela n'a aucune importance"], r:1, exp:"Une bonne structure va du général au particulier : titre principal, introduction, puis détails — ça aide autant les visiteurs que les moteurs de recherche." },
+        pratique: {
+          consigne: "Le défi final du monde 1 : une page « à propos de moi » complète.",
+          prompt: "Améliore mon fichier index.html pour en faire une vraie page « à propos de moi » complète et bien structurée : un h1 avec mon nom, une photo, un paragraphe de présentation, une liste de mes centres d'intérêt, une liste de mes compétences, et un lien vers un réseau social ou un site. Vérifie que la structure HTML est propre et logique, et explique-moi ce qui pourrait être amélioré.",
+          checklist: ["Ma page contient tous les éléments demandés", "La structure va du général au particulier", "Je suis fier de montrer cette page à quelqu'un"]
+        }
+      }
+    ]
+  },
+  {
+    id: "monde2",
+    emoji: "🎨",
+    titre: "Rendre son site beau (CSS)",
+    description: "Le HTML donne la structure, le CSS donne le style : couleurs, polices, espacements, mise en page.",
+    lecons: [
+      {
+        id: "m2l1",
+        titre: "Qu'est-ce que le CSS ?",
+        emoji: "🎨",
+        lecon: "Le CSS (Cascading Style Sheets) permet de styliser le HTML : couleurs, tailles, polices, espacements, positionnement. On le relie au HTML via un fichier séparé (style.css) ou directement dans la balise avec style=\"...\".",
+        quiz: { q: "Que permet de faire le CSS ?", options:["Ajouter de l'interactivité au clic", "Styliser visuellement une page HTML", "Stocker des données", "Créer une base de données"], r:1, exp:"Le CSS s'occupe uniquement de l'apparence visuelle : couleurs, polices, tailles, espacements, disposition." },
+        pratique: null
+      },
+      {
+        id: "m2l2",
+        titre: "Sélecteurs, couleurs et polices",
+        emoji: "🖌️",
+        lecon: "En CSS, on cible un élément avec un sélecteur (une balise, une classe .maClasse, ou un id #monId) et on lui applique des propriétés : color (couleur du texte), background-color (fond), font-size (taille du texte), font-family (police).",
+        quiz: { q: "Comment cible-t-on en CSS tous les éléments ayant class=\"carte\" ?", options:[".carte", "#carte", "carte", "*carte"], r:0, exp:"Le point . cible une classe CSS. Le dièse # cible un id (unique sur la page)." },
+        pratique: null
+      },
+      {
+        id: "m2l3",
+        titre: "Mise en page avec Flexbox",
+        emoji: "📐",
+        lecon: "Flexbox (display: flex) permet d'aligner facilement des éléments côte à côte ou en colonne, de les centrer, de répartir l'espace entre eux. C'est l'outil de mise en page le plus utilisé aujourd'hui pour des mises en page simples et moyennes.",
+        quiz: { q: "Quelle propriété CSS active le mode Flexbox sur un conteneur ?", options:["display: flex;", "position: flex;", "flex: true;", "layout: flex;"], r:0, exp:"display: flex; transforme l'élément en conteneur flexible, et ses enfants directs s'alignent automatiquement en ligne (par défaut)." },
+        pratique: {
+          consigne: "Demande à Claude d'ajouter du style à ta page du monde 1.",
+          prompt: "Crée un fichier style.css et relie-le à mon index.html. Donne à la page une jolie palette de couleurs cohérente, une police de caractères agréable, centre le contenu avec une largeur maximale confortable, et utilise Flexbox pour aligner joliment mes listes ou sections. Explique-moi les choix de mise en page que tu fais.",
+          checklist: ["Ma page a maintenant des couleurs et une police choisies", "Le contenu est centré et lisible", "Je comprends à quoi sert Flexbox dans le CSS ajouté"]
+        }
+      },
+      {
+        id: "m2l4",
+        titre: "Rendre son site responsive",
+        emoji: "📱",
+        lecon: "« Responsive » veut dire que le site s'adapte à toutes les tailles d'écran (mobile, tablette, ordinateur). On utilise souvent des unités flexibles (%, rem) et des « media queries » (@media) pour changer le style selon la largeur de l'écran.",
+        quiz: { q: "Qu'est-ce qu'une « media query » en CSS ?", options:["Une requête à une base de données", "Une règle qui applique du style selon la taille de l'écran", "Une balise HTML pour les vidéos", "Un type d'image"], r:1, exp:"Une media query comme @media (max-width: 600px) { ... } applique un style seulement si l'écran respecte la condition — la base du responsive design." },
+        pratique: {
+          consigne: "Rends ta page utilisable aussi bien sur téléphone que sur ordinateur.",
+          prompt: "Vérifie et améliore mon site pour qu'il soit bien responsive : qu'il s'affiche correctement et reste lisible sur un écran de smartphone comme sur un grand écran d'ordinateur, en utilisant des media queries si besoin. Explique-moi ensuite comment tester ça facilement (outils développeur du navigateur).",
+          checklist: ["Le site reste lisible et joli en réduisant la largeur du navigateur", "Je sais comment simuler un écran mobile dans les outils développeur", "Rien ne déborde de l'écran sur mobile"]
+        }
+      },
+      {
+        id: "m2l5",
+        titre: "Défi : un site qui a du style",
+        emoji: "🏆",
+        defi: true,
+        lecon: "Dernier effort de ce monde : peaufine l'ensemble pour obtenir un rendu vraiment soigné, cohérent, et agréable à regarder sur tous les écrans.",
+        quiz: { q: "Pourquoi est-il important qu'un site soit responsive aujourd'hui ?", options:["Ce n'est pas vraiment important", "Une grande partie des visiteurs naviguent depuis un smartphone", "Cela accélère uniquement le serveur", "Cela remplace le besoin de HTML"], r:1, exp:"Une majorité du trafic web mondial se fait sur mobile : un site qui ne s'affiche pas bien dessus perd une grande partie de ses visiteurs." },
+        pratique: {
+          consigne: "Le défi final du monde 2 : peaufiner le design.",
+          prompt: "Fais une passe finale de design sur mon site : cohérence des couleurs, des espacements, des tailles de police, effets au survol des liens (hover), et vérifie une dernière fois le rendu mobile. Donne-moi ton avis honnête sur ce qui pourrait encore être amélioré niveau design.",
+          checklist: ["Le design est cohérent du haut en bas de la page", "Les liens ont un effet visuel au survol", "Je suis satisfait du rendu sur mobile ET sur ordinateur"]
+        }
+      }
+    ]
+  },
+  {
+    id: "monde3",
+    emoji: "⚡",
+    titre: "Interactivité (JavaScript)",
+    description: "Le JavaScript donne vie à ton site : clics, animations, calculs, réactions à ce que fait le visiteur.",
+    lecons: [
+      {
+        id: "m3l1",
+        titre: "Qu'est-ce que JavaScript ?",
+        emoji: "⚡",
+        lecon: "JavaScript (JS) est le langage qui rend une page interactive : réagir à un clic, valider un formulaire, faire des calculs, modifier le contenu sans recharger la page. C'est le 3e pilier du web avec HTML (structure) et CSS (style).",
+        quiz: { q: "Quel est le rôle principal de JavaScript sur un site web ?", options:["Structurer le contenu", "Styliser visuellement", "Ajouter de l'interactivité et du comportement", "Héberger le site"], r:2, exp:"JavaScript gère le comportement : ce qui se passe quand on clique, tape, fait défiler, etc." },
+        pratique: null
+      },
+      {
+        id: "m3l2",
+        titre: "Variables et évènements",
+        emoji: "🖱️",
+        lecon: "Une variable (avec let ou const) stocke une information. Un « évènement » est une action de l'utilisateur (clic, survol, frappe clavier) à laquelle on peut réagir avec addEventListener, par exemple pour changer un texte quand on clique sur un bouton.",
+        quiz: { q: "Quelle méthode JavaScript permet de réagir à un clic sur un bouton ?", options:["button.click = true", "button.addEventListener('click', fonction)", "button.onPress()", "button.react('click')"], r:1, exp:"addEventListener('click', maFonction) exécute maFonction chaque fois que l'élément est cliqué." },
+        pratique: null
+      },
+      {
+        id: "m3l3",
+        titre: "Les conditions (if / else)",
+        emoji: "🔀",
+        lecon: "Une condition permet d'exécuter du code seulement si quelque chose est vrai : if (condition) { ... } else { ... }. C'est la base de toute logique : « si l'utilisateur a rempli le champ, alors... sinon... ».",
+        quiz: { q: "Que fait ce code : if (age >= 18) { console.log('majeur'); } else { console.log('mineur'); } ?", options:["Affiche toujours 'majeur'", "Affiche 'majeur' ou 'mineur' selon la valeur de age", "Provoque une erreur", "Ne fait rien sans bouton"], r:1, exp:"Le code vérifie la condition age >= 18 : si elle est vraie, il affiche 'majeur', sinon 'mineur'." },
+        pratique: {
+          consigne: "Premier vrai bout de JS interactif sur ton site.",
+          prompt: "Ajoute un bouton sur ma page qui, au clic, change un texte ou une couleur sur la page (utilise une condition if/else pour, par exemple, alterner entre deux messages à chaque clic). Montre-moi le code JavaScript et explique-moi chaque ligne simplement.",
+          checklist: ["Le bouton réagit bien au clic", "Je comprends ce que fait addEventListener", "Je comprends la condition if/else utilisée"]
+        }
+      },
+      {
+        id: "m3l4",
+        titre: "Boucles et tableaux",
+        emoji: "🔁",
+        lecon: "Un tableau (array) stocke plusieurs valeurs : const fruits = ['pomme', 'poire']. Une boucle (for, ou fruits.forEach) permet de répéter une action pour chaque élément du tableau, au lieu d'écrire le même code plusieurs fois.",
+        quiz: { q: "À quoi sert une boucle en programmation ?", options:["À stocker une seule valeur", "À répéter une action plusieurs fois sans dupliquer le code", "À styliser une page", "À créer une base de données"], r:1, exp:"Une boucle exécute un même bloc de code plusieurs fois, par exemple une fois pour chaque élément d'un tableau." },
+        pratique: {
+          consigne: "Utilise un tableau et une boucle pour générer du contenu dynamiquement.",
+          prompt: "Ajoute à ma page une liste de 5 éléments (par exemple mes films préférés) stockée dans un tableau JavaScript, puis génère automatiquement la liste HTML correspondante avec une boucle, plutôt que d'écrire chaque <li> à la main. Explique-moi comment la boucle construit le HTML.",
+          checklist: ["La liste s'affiche correctement à partir du tableau", "Si je change une valeur dans le tableau, la page se met à jour", "Je comprends comment la boucle génère le HTML"]
+        }
+      },
+      {
+        id: "m3l5",
+        titre: "Défi : un mini-outil interactif",
+        emoji: "🏆",
+        defi: true,
+        lecon: "Dernière étape de ce monde : combine variables, conditions et évènements pour créer un vrai petit outil utile et interactif sur ta page.",
+        quiz: { q: "Pourquoi combiner variables, conditions et évènements est puissant ?", options:["Ça ne sert à rien de les combiner", "Ça permet de créer une vraie logique qui réagit à l'utilisateur", "Ça remplace complètement le CSS", "Ça ralentit toujours le site"], r:1, exp:"C'est en combinant ces briques de base qu'on construit toute la logique interactive d'un site : formulaires, jeux, calculateurs, etc." },
+        pratique: {
+          consigne: "Le défi final du monde 3 : un mini-outil fonctionnel.",
+          prompt: "Ajoute à mon site un petit outil interactif utile et fonctionnel, par exemple un formulaire de contact qui vérifie que les champs sont bien remplis avant de valider (sans envoi réel de mail), ou un petit calculateur simple. Utilise variables, conditions et évènements. Explique-moi l'ensemble de la logique une fois terminé.",
+          checklist: ["L'outil réagit correctement à mes actions", "Les cas d'erreur (champ vide, etc.) sont bien gérés", "Je pourrais réexpliquer la logique du code à quelqu'un d'autre"]
+        }
+      }
+    ]
+  },
+  {
+    id: "monde4",
+    emoji: "📱",
+    titre: "D'un site à une application",
+    description: "Une application, c'est un site qui retient des choses et qui a plusieurs écrans ou états. Direction ta première application !",
+    lecons: [
+      {
+        id: "m4l1",
+        titre: "Site vs application : quelle différence ?",
+        emoji: "🆚",
+        lecon: "Un site classique affiche surtout de l'information. Une application web va plus loin : elle garde en mémoire ce que fait l'utilisateur (une liste de tâches, un panier, un score), et réagit dynamiquement sans recharger la page à chaque action.",
+        quiz: { q: "Qu'est-ce qui caractérise le plus une « application » par rapport à un simple site vitrine ?", options:["Elle a plus de photos", "Elle garde en mémoire des données et réagit aux actions de l'utilisateur", "Elle n'utilise pas de CSS", "Elle est toujours payante"], r:1, exp:"Une application gère un état (données qui changent) et une interactivité plus poussée qu'un simple site d'information statique." },
+        pratique: null
+      },
+      {
+        id: "m4l2",
+        titre: "Stocker des données avec localStorage",
+        emoji: "💾",
+        lecon: "localStorage permet de sauvegarder des données directement dans le navigateur de l'utilisateur, qui restent même après avoir fermé l'onglet. C'est ce qui permet à une petite application de « se souvenir » de tes données sans base de données ni serveur.",
+        quiz: { q: "Que permet localStorage.setItem('cle', 'valeur') ?", options:["D'envoyer un email", "De sauvegarder une donnée dans le navigateur", "De créer une nouvelle page HTML", "De se connecter à internet"], r:1, exp:"localStorage.setItem stocke une donnée persistante dans le navigateur ; localStorage.getItem la récupère plus tard, même après avoir rechargé la page." },
+        pratique: null
+      },
+      {
+        id: "m4l3",
+        titre: "La notion d'état (state)",
+        emoji: "🧠",
+        lecon: "L' « état » d'une application, c'est l'ensemble des données qui peuvent changer à un instant donné (ex : la liste actuelle des tâches). Bien gérer son état, c'est s'assurer que l'affichage (le HTML visible) reflète toujours fidèlement ces données.",
+        quiz: { q: "Dans une appli « liste de tâches », que représente le mieux « l'état » ?", options:["La couleur de fond de la page", "Le tableau des tâches actuelles (ajoutées, cochées, supprimées)", "La police de caractères utilisée", "Le nombre de visiteurs du site"], r:1, exp:"L'état, ce sont les données qui évoluent avec les actions de l'utilisateur — ici, le contenu réel de la liste de tâches." },
+        pratique: {
+          consigne: "Premier pas vers une vraie petite application : sauvegarder des données.",
+          prompt: "Démarre un nouveau petit projet d'application : une liste de tâches simple (ajouter une tâche via un champ texte + bouton, l'afficher dans une liste, pouvoir la cocher comme terminée). Utilise localStorage pour que la liste ne disparaisse pas si je recharge la page. Explique-moi comment l'état (le tableau de tâches) est géré dans le code.",
+          checklist: ["Je peux ajouter une tâche et la voir apparaître", "Si je recharge la page, mes tâches sont toujours là", "Je comprends comment l'état et localStorage travaillent ensemble"]
+        }
+      },
+      {
+        id: "m4l4",
+        titre: "Plusieurs écrans dans une application",
+        emoji: "🖥️",
+        lecon: "Beaucoup d'applications ont plusieurs « écrans » ou « vues » (accueil, détail, paramètres) sans être plusieurs pages HTML séparées : on affiche/cache des sections avec du CSS/JS selon ce que fait l'utilisateur, ou on utilise un système de routage comme dans l'app IA Academy elle-même.",
+        quiz: { q: "Comment une application web à une seule page HTML peut-elle simuler plusieurs 'écrans' ?", options:["C'est impossible sans recharger la page", "En affichant/masquant dynamiquement différentes sections avec JavaScript", "En dupliquant tout le CSS", "En changeant uniquement la couleur de fond"], r:1, exp:"On peut afficher une section et en cacher d'autres avec du JavaScript (souvent en changeant leur style ou en les ajoutant/retirant du DOM), sans recharger la page — c'est le principe des « Single Page Applications »." },
+        pratique: {
+          consigne: "Ajoute un deuxième écran à ton application.",
+          prompt: "Ajoute à mon appli de liste de tâches un deuxième écran/onglet « Statistiques » qui affiche le nombre total de tâches, le nombre terminées, et le pourcentage d'avancement, sans recharger la page (juste en changeant l'affichage avec du JavaScript). Explique-moi comment tu gères le changement d'écran.",
+          checklist: ["Je peux naviguer entre les deux écrans sans rechargement", "Les statistiques affichées sont justes et se mettent à jour", "Je comprends la technique utilisée pour changer d'écran"]
+        }
+      },
+      {
+        id: "m4l5",
+        titre: "Défi : une application complète",
+        emoji: "🏆",
+        defi: true,
+        lecon: "C'est le moment de finaliser une vraie petite application utile, avec sauvegarde des données et une expérience soignée — quelque chose que tu pourrais réellement utiliser au quotidien.",
+        quiz: { q: "Qu'est-ce qui rend une application « complète » et agréable à utiliser ?", options:["Uniquement le nombre de fonctionnalités", "Des fonctionnalités utiles, des données qui persistent, et une interface claire", "Le nombre de couleurs utilisées", "La taille du fichier JavaScript"], r:1, exp:"Une bonne application n'est pas la plus complexe, mais celle qui résout bien un vrai besoin, garde les données de l'utilisateur, et reste simple à utiliser." },
+        pratique: {
+          consigne: "Le défi final du monde 4 : finalise ton application.",
+          prompt: "Finalise mon application de liste de tâches : possibilité de supprimer une tâche, de la modifier, un compteur de tâches restantes, et une interface soignée (réutilise ce qu'on a appris sur le CSS). Vérifie que tout se sauvegarde bien avec localStorage. Fais-moi un résumé de toutes les fonctionnalités de l'appli à la fin.",
+          checklist: ["Je peux ajouter, cocher, modifier et supprimer une tâche", "Tout est bien sauvegardé après rechargement de la page", "Je suis fier de cette application et je pourrais l'utiliser vraiment"]
+        }
+      }
+    ]
+  },
+  {
+    id: "monde5",
+    emoji: "🎮",
+    titre: "Ton premier jeu mobile",
+    description: "Place au jeu ! Tu vas apprendre les bases de la programmation de jeux : boucle de jeu, dessin, contrôles tactiles.",
+    lecons: [
+      {
+        id: "m5l1",
+        titre: "Qu'est-ce qu'un jeu ? La boucle de jeu",
+        emoji: "🔄",
+        lecon: "Presque tous les jeux reposent sur une « boucle de jeu » (game loop) : une fonction qui se répète en continu (souvent 60 fois par seconde) et qui, à chaque tour, met à jour la position des éléments puis redessine l'écran.",
+        quiz: { q: "Qu'est-ce qu'une « boucle de jeu » ?", options:["Une erreur de programmation à éviter", "Une fonction répétée en continu qui met à jour et redessine le jeu", "Un menu du jeu", "Une base de données de scores"], r:1, exp:"La boucle de jeu tourne en continu : elle met à jour l'état du jeu (positions, score...) puis redessine l'écran, créant l'illusion de mouvement fluide." },
+        pratique: null
+      },
+      {
+        id: "m5l2",
+        titre: "Dessiner avec Canvas",
+        emoji: "🖌️",
+        lecon: "La balise HTML <canvas> est une « toile » sur laquelle on peut dessiner avec du JavaScript : formes, images, texte. C'est l'outil de base pour afficher un jeu directement dans le navigateur, sans logiciel externe.",
+        quiz: { q: "Quelle balise HTML sert de zone de dessin pour un jeu en JavaScript ?", options:["<draw>", "<canvas>", "<game>", "<svg-game>"], r:1, exp:"<canvas> fournit une zone rectangulaire sur laquelle on dessine pixel par pixel via son « contexte » JavaScript (getContext('2d'))." },
+        pratique: null
+      },
+      {
+        id: "m5l3",
+        titre: "Contrôles tactiles et clavier",
+        emoji: "👆",
+        lecon: "Sur mobile, on utilise les évènements touchstart/touchend/touchmove pour détecter les doigts sur l'écran. Sur ordinateur, on utilise plutôt keydown/keyup pour le clavier. Un bon jeu mobile doit être jouable au doigt, sans clavier.",
+        quiz: { q: "Quel évènement JavaScript détecte qu'un doigt touche l'écran ?", options:["click", "touchstart", "hover", "keydown"], r:1, exp:"touchstart se déclenche quand un doigt touche l'écran — c'est la base des contrôles tactiles pour un jeu mobile." },
+        pratique: {
+          consigne: "Premier jeu jouable : une base simple avec contrôle tactile.",
+          prompt: "Crée-moi un tout petit jeu dans un fichier canvas : un carré ou un personnage simple que je peux déplacer à gauche/droite en touchant l'écran (côté gauche = gauche, côté droit = droite), et aussi avec les flèches du clavier pour tester sur ordinateur. Explique-moi comment fonctionne la boucle de jeu (game loop) que tu as mise en place.",
+          checklist: ["Je peux déplacer l'élément avec le clavier", "Je peux le déplacer en touchant l'écran (à tester sur mobile ou en mode mobile du navigateur)", "Je comprends le principe de la boucle de jeu utilisée"]
+        }
+      },
+      {
+        id: "m5l4",
+        titre: "Score et game over",
+        emoji: "💯",
+        lecon: "Un jeu a besoin d'un objectif et d'une fin : un score qui augmente selon les actions du joueur, et une condition de « game over » (collision, temps écoulé, vies à zéro) qui arrête la partie et propose de recommencer.",
+        quiz: { q: "Qu'est-ce qui déclenche généralement un « game over » ?", options:["Le chargement de la page", "Une condition précise atteinte : collision, vies à 0, temps écoulé...", "Le simple fait d'appuyer sur une touche", "Un changement de couleur de fond"], r:1, exp:"Le game over est déclenché par une condition testée en continu dans la boucle de jeu : par exemple, si vies <= 0, alors afficher l'écran de fin." },
+        pratique: {
+          consigne: "Ajoute un objectif et une fin à ton jeu.",
+          prompt: "Ajoute à mon jeu un système de score qui augmente au fil du temps ou des actions du joueur, un obstacle simple à éviter (un carré qui tombe par exemple), une détection de collision qui déclenche un « game over » avec le score final affiché, et un bouton pour rejouer. Explique-moi comment la détection de collision fonctionne.",
+          checklist: ["Le score augmente correctement pendant la partie", "Une collision déclenche bien le game over avec le score affiché", "Je peux rejouer sans recharger la page"]
+        }
+      },
+      {
+        id: "m5l5",
+        titre: "Défi : ton premier jeu jouable",
+        emoji: "🏆",
+        defi: true,
+        lecon: "Termine ce monde avec un jeu simple mais complet et amusant, jouable du début à la fin sur mobile comme sur ordinateur.",
+        quiz: { q: "Qu'est-ce qui rend un petit jeu simple amusant malgré sa simplicité ?", options:["Uniquement des graphismes très réalistes", "Des contrôles réactifs, un objectif clair, et une difficulté qui progresse un peu", "Un très grand nombre de niveaux obligatoire", "La longueur du code source"], r:1, exp:"Des jeux très simples (comme Flappy Bird) sont amusants grâce à des contrôles précis, un objectif clair, et une difficulté qui monte progressivement — pas grâce à la complexité technique." },
+        pratique: {
+          consigne: "Le défi final du monde 5 : peaufine ton jeu pour qu'il soit vraiment amusant.",
+          prompt: "Peaufine mon jeu : augmente progressivement la difficulté au fil du temps (obstacles plus rapides ou plus nombreux), ajoute un écran de démarrage avec un bouton « Jouer », et vérifie que tout est bien jouable au tactile sur mobile. Donne-moi ton avis sur ce qui rendrait le jeu encore plus fun.",
+          checklist: ["La difficulté progresse pendant la partie", "Il y a un écran de démarrage clair", "Une personne qui ne connaît pas le jeu peut y jouer sans explication"]
+        }
+      }
+    ]
+  },
+  {
+    id: "monde6",
+    emoji: "🚀",
+    titre: "Un jeu plus grand",
+    description: "Dernier monde : sprites, collisions plus fines, niveaux progressifs, sauvegarde du meilleur score. Un vrai petit jeu complet.",
+    lecons: [
+      {
+        id: "m6l1",
+        titre: "Sprites et animations",
+        emoji: "🧍",
+        lecon: "Un « sprite » est une image représentant un personnage ou un objet du jeu. En changeant rapidement d'image (ou en découpant une image en plusieurs frames) au fil de la boucle de jeu, on crée l'illusion d'une animation, comme un dessin animé.",
+        quiz: { q: "Comment crée-t-on une animation de personnage avec des sprites ?", options:["En changeant la couleur de fond du canvas", "En affichant rapidement plusieurs images successives du personnage", "En ajoutant plus de texte à l'écran", "En augmentant la taille du fichier HTML"], r:1, exp:"On alterne rapidement entre plusieurs images (frames) représentant les étapes d'un mouvement, ce qui crée l'illusion d'animation — comme un flipbook." },
+        pratique: null
+      },
+      {
+        id: "m6l2",
+        titre: "Collisions plus précises",
+        emoji: "💥",
+        lecon: "La détection de collision de base compare des rectangles (bounding box). Pour un jeu plus précis, on peut affiner avec des cercles (distance entre les centres) ou des zones de collision plus petites que le sprite affiché, pour que ça « paraisse juste » au joueur.",
+        quiz: { q: "Pourquoi rend-on parfois la zone de collision plus petite que l'image affichée ?", options:["Pour économiser de la mémoire", "Pour que les collisions paraissent plus justes/équitables au joueur", "Parce que c'est obligatoire techniquement", "Pour ralentir le jeu volontairement"], r:1, exp:"Si la zone de collision est aussi grande que l'image (souvent avec des espaces vides autour du personnage), le joueur a l'impression de perdre « injustement ». Réduire légèrement la zone rend le jeu plus agréable." },
+        pratique: null
+      },
+      {
+        id: "m6l3",
+        titre: "Niveaux et difficulté progressive",
+        emoji: "📈",
+        lecon: "Un jeu plus abouti propose plusieurs niveaux ou une difficulté qui augmente par paliers (plus d'ennemis, plus de vitesse, nouvelles mécaniques), ce qui garde le joueur engagé sans le décourager trop vite.",
+        quiz: { q: "Pourquoi structurer un jeu en niveaux ou paliers de difficulté ?", options:["Pour compliquer inutilement le code", "Pour garder le joueur engagé en dosant progressivement le défi", "Ce n'est jamais utile", "Uniquement pour des raisons esthétiques"], r:1, exp:"Une progression bien dosée maintient l'intérêt : trop facile ennuie, trop difficile décourage. Les paliers permettent d'ajuster ce rythme." },
+        pratique: {
+          consigne: "Ajoute une vraie progression à ton jeu.",
+          prompt: "Fais évoluer mon jeu du monde 5 vers un jeu à plusieurs niveaux (ou paliers de difficulté) : par exemple tous les X points, augmente la vitesse ou ajoute un nouvel obstacle. Utilise des sprites (des images) plutôt que de simples formes si possible. Explique-moi comment tu structures la progression de la difficulté dans le code.",
+          checklist: ["Le jeu devient visiblement plus difficile avec le temps/le score", "Le jeu utilise maintenant des images plutôt que de simples formes géométriques", "Je comprends comment la difficulté progresse dans le code"]
+        }
+      },
+      {
+        id: "m6l4",
+        titre: "Sauvegarder le meilleur score",
+        emoji: "🏅",
+        lecon: "Comme pour l'application du monde 4, on peut utiliser localStorage pour enregistrer le meilleur score jamais atteint, et l'afficher à chaque partie pour donner envie au joueur de le battre.",
+        quiz: { q: "Quelle technique permet de garder le meilleur score d'un joueur entre deux visites du jeu ?", options:["Il faut redémarrer l'ordinateur", "localStorage, comme pour une application classique", "C'est impossible sans compte utilisateur", "Il faut un serveur obligatoirement"], r:1, exp:"localStorage fonctionne exactement pareil pour un jeu que pour une application : on y stocke le meilleur score et on le relit à chaque chargement de la page." },
+        pratique: {
+          consigne: "Ajoute un vrai système de meilleur score.",
+          prompt: "Ajoute à mon jeu un système de meilleur score sauvegardé avec localStorage, affiché en permanence à l'écran (score actuel + meilleur score), avec un petit message de félicitations si le joueur bat son record. Vérifie que ça persiste bien après avoir rechargé la page.",
+          checklist: ["Le meilleur score est bien affiché et persiste après rechargement", "Un message apparaît quand je bats mon record", "Je comprends pourquoi c'est la même technique que pour l'application du monde 4"]
+        }
+      },
+      {
+        id: "m6l5",
+        titre: "Défi final : un jeu complet à partager",
+        emoji: "🏆",
+        defi: true,
+        lecon: "Dernière étape de tout le parcours : finalise ton jeu pour qu'il soit complet, amusant, avec une vraie progression et un meilleur score sauvegardé — prêt à être montré fièrement à d'autres personnes.",
+        quiz: { q: "Après avoir fini ce parcours (site → appli → jeu), quelle est la meilleure prochaine étape pour continuer à progresser ?", options:["Arrêter, il n'y a plus rien à apprendre", "Construire un nouveau projet perso, un peu plus ambitieux, en continuant à demander de l'aide à une IA quand c'est utile", "Attendre que l'IA fasse tout à ta place à l'avenir", "Recommencer uniquement le monde 1 en boucle"], r:1, exp:"La meilleure façon de progresser après un parcours guidé, c'est de se lancer dans un projet personnel un peu plus ambitieux, en continuant à s'appuyer sur une IA pour apprendre en marchant — exactement ce que propose la section « Se former / Carrière » de cette app." },
+        pratique: {
+          consigne: "Le défi final de tout le parcours : ton jeu complet.",
+          prompt: "Fais une dernière passe complète sur mon jeu : écran de démarrage, règles expliquées brièvement, plusieurs niveaux de difficulté, sprites/animations, meilleur score sauvegardé, et un design soigné et cohérent (réutilise ce qu'on a vu sur le CSS). Fais-moi un résumé de tout ce que ce projet contient techniquement, du HTML de base jusqu'à la logique du jeu.",
+          checklist: ["Le jeu est complet, jouable du début à la fin, et amusant", "Je pourrais expliquer à quelqu'un comment il fonctionne techniquement", "Je suis fier de ce que j'ai construit et je sais quoi apprendre ensuite"]
+        }
+      }
+    ]
+  }
+];
