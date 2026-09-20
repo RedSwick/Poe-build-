@@ -394,16 +394,16 @@ function renderDevLecon(mondeId, leconId){
   }
   const alreadyDone = !!progress.completed[lecon.id];
 
-  content.appendChild(el(`<a href="#dev/${monde.id}" style="color:var(--accent); font-size:.85rem; text-decoration:none;">← Retour à « ${monde.titre} »</a>`));
-  content.appendChild(el(`<h2 class="section-title" style="margin-top:10px;">${lecon.emoji} ${lecon.titre}</h2>`));
-  content.appendChild(el(`<p class="card">${lecon.lecon}</p>`));
+  content.appendChild(el(`<a href="#dev/${monde.id}" style="color:var(--accent); font-size:.85rem; text-decoration:none;">← Retour à « ${escapeHtml(monde.titre)} »</a>`));
+  content.appendChild(el(`<h2 class="section-title" style="margin-top:10px;">${lecon.emoji} ${escapeHtml(lecon.titre)}</h2>`));
+  content.appendChild(el(`<p class="card">${escapeHtml(lecon.lecon)}</p>`));
 
   // Quiz
   let quizCorrect = false;
   const quizCard = el(`
     <div class="card">
       <h4 style="margin:0 0 10px;">❓ Vérifie ta compréhension</h4>
-      <div class="quiz-q">${lecon.quiz.q}</div>
+      <div class="quiz-q">${escapeHtml(lecon.quiz.q)}</div>
       <div class="quiz-options"></div>
       <div class="quiz-exp" style="display:none;"></div>
     </div>
@@ -413,7 +413,7 @@ function renderDevLecon(mondeId, leconId){
   const expDiv = quizCard.querySelector(".quiz-exp");
   let quizDone = false;
   lecon.quiz.options.forEach((opt, oi)=>{
-    const optEl = el(`<div class="quiz-option">${opt}</div>`);
+    const optEl = el(`<div class="quiz-option">${escapeHtml(opt)}</div>`);
     optEl.addEventListener("click", ()=>{
       if(quizDone) return;
       quizDone = true;
@@ -433,7 +433,7 @@ function renderDevLecon(mondeId, leconId){
     const pratiqueCard = el(`
       <div class="card">
         <h4 style="margin:0 0 10px;">🛠️ Exercice pratique avec Claude</h4>
-        <p style="color:var(--text-muted); margin:0 0 12px;">${lecon.pratique.consigne}</p>
+        <p style="color:var(--text-muted); margin:0 0 12px;">${escapeHtml(lecon.pratique.consigne)}</p>
         <div class="output-box">${escapeHtml(lecon.pratique.prompt)}</div>
         <button class="btn small secondary" id="copyPratiqueBtn" style="margin-top:10px;">📋 Copier le prompt</button>
         <div class="checklist" style="margin-top:14px;"></div>
@@ -452,7 +452,7 @@ function renderDevLecon(mondeId, leconId){
     lecon.pratique.checklist.forEach((item, ci)=>{
       const key = `dev_${lecon.id}_${ci}`;
       const checked = genericProgress[key] ? "checked" : "";
-      const label = el(`<label><input type="checkbox" ${checked}> <span>${item}</span></label>`);
+      const label = el(`<label><input type="checkbox" ${checked}> <span>${escapeHtml(item)}</span></label>`);
       label.querySelector("input").addEventListener("change", (ev)=>{
         const p = getProgress();
         p[key] = ev.target.checked;
@@ -563,7 +563,7 @@ function renderDailyChallengeCard(){
   const q = getDailyChallenge();
   card.innerHTML = `
     <h3 style="margin:0 0 10px;">🎯 Défi du jour <span class="tag">🔥 ${progress.streak.count}</span></h3>
-    <div class="quiz-q">${q.q}</div>
+    <div class="quiz-q">${escapeHtml(q.q)}</div>
     <div class="quiz-options"></div>
     <div class="quiz-exp" style="display:none;"></div>
   `;
@@ -571,7 +571,7 @@ function renderDailyChallengeCard(){
   const expDiv = card.querySelector(".quiz-exp");
   let done = false;
   q.options.forEach((opt, oi)=>{
-    const optEl = el(`<div class="quiz-option">${opt}</div>`);
+    const optEl = el(`<div class="quiz-option">${escapeHtml(opt)}</div>`);
     optEl.addEventListener("click", ()=>{
       if(done) return;
       done = true;
@@ -1340,7 +1340,7 @@ function renderExercices(){
   QUIZ.forEach((q, qi)=>{
     const block = el(`
       <div class="card" style="margin-bottom:14px;">
-        <div class="quiz-q">${qi+1}. ${q.q}</div>
+        <div class="quiz-q">${qi+1}. ${escapeHtml(q.q)}</div>
         <div class="quiz-options"></div>
         <div class="quiz-exp" style="display:none;"></div>
       </div>
@@ -1349,7 +1349,7 @@ function renderExercices(){
     const expDiv = block.querySelector(".quiz-exp");
     let done = false;
     q.options.forEach((opt, oi)=>{
-      const optEl = el(`<div class="quiz-option">${opt}</div>`);
+      const optEl = el(`<div class="quiz-option">${escapeHtml(opt)}</div>`);
       optEl.addEventListener("click", ()=>{
         if(done) return;
         done = true;
@@ -1377,8 +1377,8 @@ function renderExercices(){
     const key = "ex_" + i;
     const card = el(`
       <div class="card">
-        <h4 style="margin:0 0 8px;">${ex.titre}</h4>
-        <p style="color:var(--text-muted); margin:0 0 12px;">${ex.consigne}</p>
+        <h4 style="margin:0 0 8px;">${escapeHtml(ex.titre)}</h4>
+        <p style="color:var(--text-muted); margin:0 0 12px;">${escapeHtml(ex.consigne)}</p>
         <div class="checklist"></div>
       </div>
     `);
@@ -1386,7 +1386,7 @@ function renderExercices(){
     ex.checklist.forEach((item, ci)=>{
       const itemKey = key + "_" + ci;
       const checked = progress[itemKey] ? "checked" : "";
-      const label = el(`<label><input type="checkbox" ${checked}> <span>${item}</span></label>`);
+      const label = el(`<label><input type="checkbox" ${checked}> <span>${escapeHtml(item)}</span></label>`);
       label.querySelector("input").addEventListener("change", (e)=>{
         const p = getProgress();
         p[itemKey] = e.target.checked;
