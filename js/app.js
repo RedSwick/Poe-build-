@@ -119,9 +119,101 @@ function renderAccueil(){
    ========================================================= */
 function renderActu(){
   content.appendChild(el(`<h2 class="section-title">📰 Actualités & repères historiques</h2>`));
-  content.appendChild(el(`<p class="section-sub">L'IA évolue trop vite pour qu'une liste figée reste "à jour" longtemps.
-  Voici donc deux choses : une frise pour comprendre comment on en est arrivé là, et une liste de sources fiables à suivre en continu pour les vraies nouveautés.</p>`));
+  content.appendChild(el(`<p class="section-sub">Dernière vraie recherche web effectuée le <b>${APP_META.lastLiveSearch}</b>. L'IA évolue vite : utilise le bouton ci-dessous pour tenter un rafraîchissement en direct, ou le prompt fourni pour demander une mise à jour complète.</p>`));
 
+  /* --- Actus récentes (issues d'une vraie recherche web) --- */
+  content.appendChild(el(`<div class="card"><h3>🗞️ Actus récentes <span class="tag">màj ${APP_META.lastLiveSearch}</span></h3><div id="actusRecentes"></div></div>`));
+  const actusDiv = document.getElementById("actusRecentes");
+  ACTUS_RECENTES.slice().sort((a,b)=> b.date.localeCompare(a.date)).forEach(a=>{
+    actusDiv.appendChild(el(`
+      <details class="concept-item" style="border-bottom:1px solid var(--border); padding-bottom:10px;">
+        <summary>${a.titre} <span class="badge">${a.date}</span></summary>
+        <div class="concept-body">
+          <p>${a.resume}</p>
+          <p><b>💡 Pourquoi c'est important :</b> ${a.explication}</p>
+          <p style="font-size:.85rem;">Source : <a href="${a.url}" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">${a.source} →</a></p>
+        </div>
+      </details>
+    `));
+  });
+
+  /* --- Bouton "chercher les toutes dernières actus" (fetch live best-effort) --- */
+  content.appendChild(el(`
+    <div class="card">
+      <h3>🔄 Chercher les toutes dernières actus</h3>
+      <p class="section-sub" style="margin-bottom:14px;">
+        Cette appli est un simple site statique (pas de serveur), donc elle ne peut pas interroger une IA toute seule.
+        Le bouton ci-dessous tente de récupérer en direct, depuis ton navigateur, les derniers titres publiés sur les blogs officiels.
+        Si ton navigateur bloque la requête (protection de sécurité normale), utilise le prompt copiable juste en dessous :
+        colle-le dans une session Claude (par ex. Claude Code sur ce projet) pour obtenir une vraie mise à jour, sourcée et expliquée,
+        écrite directement dans l'appli — exactement comme pour la liste ci-dessus.
+      </p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+        <button class="btn" id="liveFetchBtn">🔄 Chercher maintenant (en direct)</button>
+        <button class="btn secondary" id="copyPromptBtn">📋 Copier le prompt de mise à jour pour Claude</button>
+      </div>
+      <div id="liveFetchStatus" style="color:var(--text-muted); font-size:.85rem; margin-bottom:6px;"></div>
+      <div id="liveFetchResults"></div>
+      <details style="margin-top:10px;">
+        <summary style="cursor:pointer; color:var(--accent); font-weight:600; font-size:.85rem;">Voir le prompt de mise à jour</summary>
+        <div class="output-box">${escapeHtml(PROMPT_MAJ_ACTUS)}</div>
+      </details>
+    </div>
+  `));
+
+  document.getElementById("copyPromptBtn").addEventListener("click", (e)=>{
+    navigator.clipboard.writeText(PROMPT_MAJ_ACTUS).then(()=>{
+      const old = e.target.textContent;
+      e.target.textContent = "✅ Prompt copié !";
+      setTimeout(()=> e.target.textContent = old, 1800);
+    }).catch(()=>{});
+  });
+
+  document.getElementById("liveFetchBtn").addEventListener("click", async (e)=>{
+    const btn = e.target;
+    const status = document.getElementById("liveFetchStatus");
+    const results = document.getElementById("liveFetchResults");
+    btn.disabled = true;
+    btn.textContent = "⏳ Recherche en cours...";
+    status.textContent = "Interrogation des blogs officiels depuis ton navigateur...";
+    results.innerHTML = "";
+
+    const found = await fetchLiveHeadlines();
+
+    btn.disabled = false;
+    btn.textContent = "🔄 Chercher maintenant (en direct)";
+
+    if(found.length === 0){
+      status.innerHTML = `⚠️ Ton navigateur a bloqué toutes les requêtes (protection CORS/vie privée, courant en navigation privée ou avec un bloqueur de pub). Utilise le bouton « Copier le prompt » ci-dessus à la place : c'est la méthode fiable.`;
+      return;
+    }
+    status.textContent = `${found.length} titre(s) récupéré(s) en direct à l'instant (aperçu brut, non résumé par une IA) :`;
+    found.forEach(h=>{
+      results.appendChild(el(`
+        <div class="card" style="margin-bottom:8px; padding:12px 16px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+            <a href="${h.url}" target="_blank" rel="noopener noreferrer" style="font-weight:600; color:var(--text);">${escapeHtml(h.titre)}</a>
+            <button class="btn small secondary" data-explain="${encodeURIComponent(h.titre)}" data-url="${encodeURIComponent(h.url)}">🧠 Demande une explication</button>
+          </div>
+          <p style="margin:6px 0 0; font-size:.78rem; color:var(--text-muted);">Source : ${h.source}</p>
+        </div>
+      `));
+    });
+    results.querySelectorAll("[data-explain]").forEach(b=>{
+      b.addEventListener("click", ()=>{
+        const titre = decodeURIComponent(b.dataset.explain);
+        const url = decodeURIComponent(b.dataset.url);
+        const prompt = `Explique-moi cette actualité IA : "${titre}" (source : ${url}).\nDonne le contexte, pourquoi c'est important, et ce que ça change concrètement, en français simple, en moins de 150 mots.`;
+        navigator.clipboard.writeText(prompt).then(()=>{
+          const old = b.textContent;
+          b.textContent = "✅ Copié !";
+          setTimeout(()=> b.textContent = old, 1800);
+        }).catch(()=>{});
+      });
+    });
+  });
+
+  /* --- Frise historique --- */
   content.appendChild(el(`<div class="card"><h3>🕰️ Frise historique</h3><div class="timeline" id="frise"></div></div>`));
   const frise = document.getElementById("frise");
   FRISE_HISTORIQUE.forEach(item=>{
@@ -156,6 +248,45 @@ function renderActu(){
       </ul>
     </div>
   `));
+}
+
+/* --- Récupération best-effort de titres en direct via un lecteur web CORS-friendly ---
+   Les blogs officiels n'autorisent généralement pas les requêtes cross-origin
+   depuis un navigateur (protection CORS). On passe donc par r.jina.ai, un
+   service public qui renvoie le contenu texte d'une page. Si ce service est
+   indisponible ou bloqué, on renvoie simplement un tableau vide : l'appli
+   affiche alors le message de repli (voir liveFetchBtn ci-dessus). */
+async function fetchLiveHeadlines(){
+  const linkRegex = /\[([^\[\]]{15,140})\]\((https?:\/\/[^\s)]+)\)/g;
+  const skipWords = /cookie|privacy|se connecter|sign in|log in|subscribe|s'abonner|twitter|linkedin|facebook|instagram|youtube|accueil|home|about|à propos|contact|careers|carrière|terms|mentions légales/i;
+
+  const perSource = await Promise.allSettled(SOURCES_ACTU.map(async (source)=>{
+    const controller = new AbortController();
+    const timeout = setTimeout(()=> controller.abort(), 8000);
+    try{
+      const res = await fetch("https://r.jina.ai/" + source.url, { signal: controller.signal });
+      clearTimeout(timeout);
+      if(!res.ok) return [];
+      const text = await res.text();
+      const seen = new Set();
+      const items = [];
+      let m;
+      while((m = linkRegex.exec(text)) !== null && items.length < 3){
+        const titre = m[1].trim();
+        const url = m[2].trim();
+        if(skipWords.test(titre)) continue;
+        if(seen.has(titre)) continue;
+        seen.add(titre);
+        items.push({ titre, url, source: source.nom });
+      }
+      return items;
+    }catch(err){
+      clearTimeout(timeout);
+      return [];
+    }
+  }));
+
+  return perSource.flatMap(r => r.status === "fulfilled" ? r.value : []);
 }
 
 /* =========================================================
