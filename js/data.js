@@ -1117,15 +1117,76 @@ const DEV_PATH = [
       },
       {
         id: "m6l5",
-        titre: "Défi final : un jeu complet à partager",
+        titre: "Défi : un jeu complet",
         emoji: "🏆",
         defi: true,
-        lecon: "Dernière étape de tout le parcours : finalise ton jeu pour qu'il soit complet, amusant, avec une vraie progression et un meilleur score sauvegardé — prêt à être montré fièrement à d'autres personnes.",
-        quiz: { q: "Après avoir fini ce parcours (site → appli → jeu), quelle est la meilleure prochaine étape pour continuer à progresser ?", options:["Arrêter, il n'y a plus rien à apprendre", "Construire un nouveau projet perso, un peu plus ambitieux, en continuant à demander de l'aide à une IA quand c'est utile", "Attendre que l'IA fasse tout à ta place à l'avenir", "Recommencer uniquement le monde 1 en boucle"], r:1, exp:"La meilleure façon de progresser après un parcours guidé, c'est de se lancer dans un projet personnel un peu plus ambitieux, en continuant à s'appuyer sur une IA pour apprendre en marchant — exactement ce que propose la section « Se former / Carrière » de cette app." },
+        lecon: "Avant dernière étape : finalise ton jeu pour qu'il soit complet, amusant, avec une vraie progression et un meilleur score sauvegardé — prêt à être montré fièrement à d'autres personnes. Il ne restera plus qu'à le mettre en ligne (monde suivant) pour pouvoir vraiment le partager.",
+        quiz: { q: "Une fois un projet fini sur ton ordinateur, comment le montrer facilement à quelqu'un d'autre (sans qu'il installe rien) ?", options:["Ce n'est pas possible", "En le publiant en ligne pour obtenir un lien partageable", "Uniquement par capture d'écran", "En lui envoyant tous les fichiers par email"], r:1, exp:"Publier son projet en ligne (voir le monde suivant) permet d'obtenir un lien que n'importe qui peut ouvrir dans son navigateur, sans rien installer — la meilleure façon de partager son travail." },
         pratique: {
-          consigne: "Le défi final de tout le parcours : ton jeu complet.",
+          consigne: "L'avant-dernier défi : ton jeu complet.",
           prompt: "Fais une dernière passe complète sur mon jeu : écran de démarrage, règles expliquées brièvement, plusieurs niveaux de difficulté, sprites/animations, meilleur score sauvegardé, et un design soigné et cohérent (réutilise ce qu'on a vu sur le CSS). Fais-moi un résumé de tout ce que ce projet contient techniquement, du HTML de base jusqu'à la logique du jeu.",
-          checklist: ["Le jeu est complet, jouable du début à la fin, et amusant", "Je pourrais expliquer à quelqu'un comment il fonctionne techniquement", "Je suis fier de ce que j'ai construit et je sais quoi apprendre ensuite"]
+          checklist: ["Le jeu est complet, jouable du début à la fin, et amusant", "Je pourrais expliquer à quelqu'un comment il fonctionne techniquement", "Je suis fier de ce que j'ai construit"]
+        }
+      }
+    ]
+  },
+  {
+    id: "monde7",
+    emoji: "🚀",
+    titre: "Publier en ligne",
+    description: "Un projet qui reste sur ton ordinateur, personne d'autre ne peut le voir. Dernier monde : apprends à le publier gratuitement pour obtenir un vrai lien à partager.",
+    lecons: [
+      {
+        id: "m7l1",
+        titre: "Pourquoi publier son projet en ligne ?",
+        emoji: "🌍",
+        lecon: "Un site ou un jeu qui reste dans un dossier sur ton ordinateur n'est visible que par toi. Le publier en ligne lui donne une adresse (URL) que n'importe qui peut ouvrir depuis son navigateur, sur mobile ou ordinateur : c'est indispensable pour le montrer à des amis, l'ajouter à un portfolio, ou candidater à un emploi.",
+        quiz: { q: "Que gagne-t-on principalement en publiant un projet en ligne plutôt que de le garder en local ?", options:["Le code devient automatiquement meilleur", "Un lien (URL) que n'importe qui peut ouvrir sans rien installer", "Le projet devient payant automatiquement", "Rien de particulier"], r:1, exp:"La publication transforme un projet « privé sur ton disque dur » en une adresse web accessible à tous, ce qui est le seul vrai moyen de le partager facilement." },
+        pratique: null
+      },
+      {
+        id: "m7l2",
+        titre: "Git et GitHub : à quoi ça sert ?",
+        emoji: "🗂️",
+        lecon: "Git est un outil qui garde l'historique des versions de ton code (utile pour revenir en arrière si tu casses quelque chose). GitHub est un site qui héberge ton code en ligne dans un « dépôt » (repository) — et propose aussi d'héberger gratuitement de simples sites web grâce à GitHub Pages.",
+        quiz: { q: "Quelle est la différence entre Git et GitHub ?", options:["Ce sont deux noms pour exactement la même chose", "Git est l'outil de gestion de versions, GitHub est un site qui héberge des dépôts Git en ligne", "GitHub sert uniquement à coder, Git sert uniquement à publier", "Git est payant, GitHub est gratuit"], r:1, exp:"Git est le logiciel de gestion de versions (fonctionne même sans internet). GitHub est un service en ligne qui héberge des dépôts Git et ajoute des fonctionnalités comme GitHub Pages." },
+        pratique: null
+      },
+      {
+        id: "m7l3",
+        titre: "Publier gratuitement avec GitHub Pages",
+        emoji: "📤",
+        lecon: "GitHub Pages permet d'héberger gratuitement un site statique (HTML/CSS/JS, exactement ce que tu as construit dans les mondes précédents) directement depuis un dépôt GitHub, en quelques clics dans les réglages du dépôt.",
+        quiz: { q: "Quel type de projet GitHub Pages peut-il héberger gratuitement ?", options:["Uniquement des bases de données", "Des sites statiques en HTML/CSS/JS, comme ceux de ce parcours", "Uniquement des applications avec un serveur payant", "Aucun, c'est un service payant"], r:1, exp:"GitHub Pages héberge gratuitement des sites statiques (pas de serveur ni de base de données) — parfait pour tous les projets HTML/CSS/JS construits jusqu'ici." },
+        pratique: {
+          consigne: "Publie un de tes projets avec l'aide de Claude, étape par étape.",
+          prompt: "Je veux mettre mon projet [NOM DU PROJET, ex : mon site \"à propos de moi\"] en ligne gratuitement avec GitHub Pages. Guide-moi étape par étape en partant de zéro : créer un compte GitHub si besoin, créer un dépôt, y envoyer mon code, puis activer GitHub Pages dans les réglages. Explique-moi chaque commande avant que je la tape, et aide-moi à corriger toute erreur que je rencontre.",
+          checklist: ["Mon projet est bien envoyé sur un dépôt GitHub", "GitHub Pages est activé et me donne un lien", "Le lien fonctionne quand je l'ouvre dans un nouvel onglet (ou je sais quoi corriger sinon)"]
+        }
+      },
+      {
+        id: "m7l4",
+        titre: "Alternatives et nom de domaine",
+        emoji: "🌐",
+        lecon: "Netlify et Vercel sont d'autres services gratuits d'hébergement, souvent encore plus simples (glisser-déposer un dossier, ou connecter directement un dépôt GitHub), et pratiques si ton projet a besoin de fonctionnalités un peu plus avancées. On peut aussi, plus tard, relier un nom de domaine personnalisé (ex : monsite.fr) acheté séparément à n'importe lequel de ces services.",
+        quiz: { q: "Que peuvent apporter des services comme Netlify ou Vercel par rapport à GitHub Pages ?", options:["Rien, ils font exactement la même chose sans aucune différence", "Une mise en ligne parfois plus simple et quelques fonctionnalités supplémentaires", "Ils sont uniquement payants", "Ils ne fonctionnent qu'avec un langage différent du HTML/CSS/JS"], r:1, exp:"Ce sont des alternatives gratuites à GitHub Pages, avec parfois une mise en ligne plus simple (glisser-déposer) ou des fonctionnalités en plus — le choix dépend surtout des préférences et des besoins du projet." },
+        pratique: {
+          consigne: "Facultatif : explore une alternative à GitHub Pages.",
+          prompt: "Explique-moi simplement comment je pourrais publier le même projet sur Netlify (ou Vercel) plutôt que GitHub Pages, et dans quels cas ce serait plus intéressant pour moi. Si je veux essayer, guide-moi étape par étape.",
+          checklist: ["Je comprends la différence entre GitHub Pages, Netlify et Vercel", "Je sais lequel choisir selon mes besoins", "(Optionnel) J'ai testé une mise en ligne avec un autre service"]
+        }
+      },
+      {
+        id: "m7l5",
+        titre: "Défi final : partage ton projet",
+        emoji: "🎓",
+        defi: true,
+        lecon: "Dernière étape de tout le parcours : choisis le projet dont tu es le plus fier (le site, l'application ou le jeu), publie-le en ligne, et partage réellement le lien avec quelqu'un pour avoir un vrai retour.",
+        quiz: { q: "Après avoir publié un projet et reçu des retours, quelle est la meilleure attitude ?", options:["Ignorer tous les retours", "Utiliser les retours pour l'améliorer petit à petit, avec l'aide de Claude si besoin", "Supprimer le projet immédiatement", "Ne plus jamais y retoucher"], r:1, exp:"Un projet publié n'est jamais vraiment « fini » : les retours des utilisateurs sont la meilleure source d'amélioration, et tu peux toujours redemander de l'aide pour ajouter une fonctionnalité ou corriger un bug." },
+        pratique: {
+          consigne: "Le tout dernier défi de ce parcours : publie et partage pour de vrai.",
+          prompt: "Aide-moi à choisir, parmi mes projets de ce parcours, celui qui est le plus abouti et à le publier en ligne s'il ne l'est pas déjà. Vérifie avec moi que le lien fonctionne bien sur mobile et sur ordinateur, et suggère-moi 2-3 petites améliorations rapides avant que je le partage.",
+          checklist: ["Un de mes projets est publié en ligne avec un lien qui fonctionne", "J'ai partagé ce lien avec au moins une vraie personne", "Je sais quel projet j'aimerais construire ensuite"]
         }
       }
     ]

@@ -30,6 +30,10 @@ sidebar.addEventListener("click", (e)=>{
   if(e.target.tagName === "A") sidebar.classList.remove("open");
 });
 
+/* ---------- Recherche globale (bouton topbar) ---------- */
+const searchToggle = document.getElementById("searchToggle");
+if(searchToggle) searchToggle.addEventListener("click", ()=> openSearchModal());
+
 /* ---------- Progression (localStorage) ---------- */
 function getProgress(){
   try{ return JSON.parse(localStorage.getItem("ia-academy-progress")) || {}; }
@@ -43,6 +47,7 @@ function saveProgress(p){
 const ROUTES = {
   accueil: renderAccueil,
   dev: renderDev,
+  flashcards: renderFlashcards,
   actu: renderActu,
   concepts: renderConcepts,
   comparatif: renderComparatif,
@@ -51,7 +56,8 @@ const ROUTES = {
   local: renderLocal,
   exercices: renderExercices,
   glossaire: renderGlossaire,
-  formation: renderFormation
+  formation: renderFormation,
+  reglages: renderReglages
 };
 
 function navigate(){
@@ -89,12 +95,15 @@ function renderAccueil(){
         comment en faire tourner une chez toi, et des exercices pour t'entraîner vraiment.<br><br>
         Dernière mise à jour du contenu : <b>${APP_META.lastUpdate}</b>. ${APP_META.note}</p>
       </div>
+      <div id="dailyChallengeSlot" style="margin-bottom:20px;"></div>
       <div class="grid grid-3" id="homeCards"></div>
     </div>
   `));
+  document.getElementById("dailyChallengeSlot").appendChild(renderDailyChallengeCard());
 
   const cards = [
     {href:"#dev", emoji:"🏆", titre:"Parcours Dev", desc:"Façon Duolingo : apprends étape par étape à créer un site, puis une appli, puis un jeu — avec Claude, en révisant ce que tu as appris."},
+    {href:"#flashcards", emoji:"🃏", titre:"Flashcards", desc:"Révise les concepts et le glossaire façon Anki, pour ne plus jamais les oublier."},
     {href:"#actu", emoji:"📰", titre:"Actualités & frise", desc:"Où en est l'IA aujourd'hui, repères historiques, et où suivre les vraies nouveautés."},
     {href:"#concepts", emoji:"📚", titre:"Comprendre l'IA", desc:"Tous les concepts et mots compliqués expliqués simplement, avec des analogies."},
     {href:"#comparatif", emoji:"⚖️", titre:"Comparatif des IA", desc:"ChatGPT, Claude, Gemini, Mistral... gratuit ou payant, pour quoi faire ?"},
@@ -103,7 +112,8 @@ function renderAccueil(){
     {href:"#local", emoji:"💻", titre:"IA en local", desc:"Le tuto pas-à-pas pour faire tourner une IA gratuitement sur ton ordinateur."},
     {href:"#exercices", emoji:"🏋️", titre:"Exercices & quiz", desc:"Teste tes connaissances et entraîne-toi à écrire de bons prompts."},
     {href:"#glossaire", emoji:"📖", titre:"Glossaire", desc:"Tous les termes techniques, cherchables, expliqués en une phrase."},
-    {href:"#formation", emoji:"🚀", titre:"Se former / Carrière", desc:"Un parcours débutant → avancé, les métiers de l'IA, les ressources pour aller loin."}
+    {href:"#formation", emoji:"🚀", titre:"Se former / Carrière", desc:"Un parcours débutant → avancé, les métiers de l'IA, les ressources pour aller loin."},
+    {href:"#reglages", emoji:"⚙️", titre:"Réglages", desc:"Sauvegarde, restaure ou réinitialise toute ta progression."}
   ];
   const grid = document.getElementById("homeCards");
   cards.forEach(c=>{
@@ -188,8 +198,14 @@ function completeLesson(leconId, xp, quizCorrect){
   }
   updateStreak(progress);
   scheduleReview(progress, leconId, quizCorrect);
+  if(!progress.completedAllDate && flattenLessons().every(f => progress.completed[f.lecon.id])){
+    progress.completedAllDate = todayStr();
+  }
   saveDevProgress(progress);
   return progress;
+}
+function isDevPathFullyComplete(progress){
+  return flattenLessons().every(f => progress.completed[f.lecon.id]);
 }
 function getDueReviews(progress){
   const today = todayStr();
@@ -199,10 +215,35 @@ function getDueReviews(progress){
     .map(({monde, lecon}) => ({ monde, lecon }));
 }
 
+/* --- Badges --- */
+function getAllProgressForBadges(){
+  return { dev: getDevProgress(), flash: getFlashProgress(), daily: getDailyProgress() };
+}
+const BADGES = [
+  { id:"first_lesson", emoji:"🥇", titre:"Premier pas", desc:"Termine ta première leçon du Parcours Dev.", check:(d)=> Object.keys(d.dev.completed).length >= 1 },
+  { id:"streak7", emoji:"🔥", titre:"Une semaine de suite", desc:"7 jours de suite sur le Parcours Dev.", check:(d)=> d.dev.streak.count >= 7 },
+  { id:"streak30", emoji:"🔥🔥", titre:"Un mois de suite", desc:"30 jours de suite sur le Parcours Dev.", check:(d)=> d.dev.streak.count >= 30 },
+  { id:"xp100", emoji:"⭐", titre:"100 XP", desc:"Atteins 100 points d'XP.", check:(d)=> d.dev.xp >= 100 },
+  { id:"xp500", emoji:"🌟", titre:"500 XP", desc:"Atteins 500 points d'XP.", check:(d)=> d.dev.xp >= 500 },
+  ...DEV_PATH.map(monde => ({
+    id: "world_" + monde.id,
+    emoji: monde.emoji,
+    titre: `${monde.titre} terminé`,
+    desc: `Termine les ${monde.lecons.length} leçons de ce monde.`,
+    check: (d) => monde.lecons.every(l => d.dev.completed[l.id])
+  })),
+  { id:"graduate", emoji:"🎓", titre:"Diplômé IA Academy", desc:"Termine les 7 mondes du Parcours Dev.", check:(d)=> isDevPathFullyComplete(d.dev) },
+  { id:"flash20", emoji:"🧠", titre:"Mémoire qui chauffe", desc:"Révise 20 flashcards.", check:(d)=> (d.flash.reviewCount||0) >= 20 },
+  { id:"flash100", emoji:"🧠✨", titre:"Mémoire de champion", desc:"Révise 100 flashcards.", check:(d)=> (d.flash.reviewCount||0) >= 100 },
+  { id:"daily5", emoji:"📅", titre:"Assidu", desc:"5 jours de suite de défi quotidien.", check:(d)=> d.daily.streak.count >= 5 }
+];
+
 function renderDev(params){
   const mondeId = params && params[0];
   const leconId = params && params[1];
-  if(mondeId && leconId){
+  if(mondeId === "certificat"){
+    renderCertificate();
+  }else if(mondeId && leconId){
     renderDevLecon(mondeId, leconId);
   }else if(mondeId){
     renderDevMonde(mondeId);
@@ -275,6 +316,33 @@ function renderDevDashboard(){
       </div>
     `);
     worldsDiv.appendChild(card);
+  });
+
+  /* --- Certificat --- */
+  const fullyDone = isDevPathFullyComplete(progress);
+  content.appendChild(el(`
+    <div class="card" style="margin-top:20px; text-align:center; background:linear-gradient(135deg, rgba(91,75,255,0.08), rgba(0,184,148,0.08));">
+      <h3 style="margin:0 0 6px;">🎓 Certificat de fin de parcours</h3>
+      <p style="margin:0 0 12px; color:var(--text-muted);">${fullyDone ? "Bravo, tu as terminé les 7 mondes ! Ton certificat t'attend." : `${doneCount} / ${totalLecons} leçons terminées sur tout le parcours — continue pour débloquer ton certificat.`}</p>
+      ${fullyDone ? `<a class="btn" href="#dev/certificat">🎓 Voir mon certificat</a>` : `<div style="background:var(--border); border-radius:20px; height:8px; overflow:hidden; max-width:300px; margin:0 auto;"><div style="background:var(--accent); height:100%; width:${Math.round((doneCount/totalLecons)*100)}%;"></div></div>`}
+    </div>
+  `));
+
+  /* --- Badges --- */
+  content.appendChild(el(`<h3 style="margin-top:26px;">🏅 Badges</h3>`));
+  const badgeGrid = el(`<div class="grid grid-3" id="badgeGrid"></div>`);
+  content.appendChild(badgeGrid);
+  const allProgress = getAllProgressForBadges();
+  BADGES.forEach(b=>{
+    const unlocked = b.check(allProgress);
+    badgeGrid.appendChild(el(`
+      <div class="card" style="margin-bottom:0; text-align:center; opacity:${unlocked ? "1" : "0.4"};">
+        <div style="font-size:1.8rem;">${b.emoji}</div>
+        <div style="font-weight:600; font-size:.9rem; margin-top:4px;">${b.titre}</div>
+        <div style="font-size:.78rem; color:var(--text-muted); margin-top:4px;">${b.desc}</div>
+        ${unlocked ? `<div style="margin-top:6px; font-size:.78rem; color:var(--success); font-weight:600;">Débloqué ✅</div>` : ""}
+      </div>
+    `));
   });
 }
 
@@ -412,6 +480,392 @@ function renderDevLecon(mondeId, leconId){
         ${nextLesson ? `<a class="btn" href="#dev/${nextLesson.monde.id}/${nextLesson.lecon.id}">Leçon suivante →</a>` : `<a class="btn" href="#dev">Voir le parcours complet 🏆</a>`}
       </div>
     `;
+  });
+}
+
+function renderCertificate(){
+  const progress = getDevProgress();
+  content.appendChild(el(`<a href="#dev" style="color:var(--accent); font-size:.85rem; text-decoration:none;">← Retour au parcours</a>`));
+
+  if(!isDevPathFullyComplete(progress)){
+    content.appendChild(el(`<h2 class="section-title" style="margin-top:10px;">🎓 Certificat de fin de parcours</h2>`));
+    content.appendChild(el(`<div class="card"><p style="margin:0; color:var(--text-muted);">Termine les 7 mondes du Parcours Dev pour débloquer ton certificat. Continue, tu y es presque peut-être déjà !</p></div>`));
+    return;
+  }
+
+  let savedName = "";
+  try{ savedName = localStorage.getItem("ia-academy-cert-name") || ""; }catch(e){}
+  const completionDate = progress.completedAllDate || todayStr();
+
+  content.appendChild(el(`
+    <div>
+      <div class="card no-print" style="margin-top:10px;">
+        <label>Ton prénom / nom (affiché sur le certificat)</label>
+        <input type="text" id="certName" value="${escapeHtml(savedName)}" placeholder="Ex : Flo">
+        <button class="btn small" id="certSaveBtn">Mettre à jour le certificat</button>
+      </div>
+      <div class="card" id="certificateCard" style="text-align:center; border:3px solid var(--accent); padding:40px 24px;">
+        <div style="font-size:2rem;">🎓</div>
+        <h2 style="margin:10px 0 4px;">Certificat de réussite</h2>
+        <p style="color:var(--text-muted); margin:0 0 24px;">IA Academy — Parcours Dev</p>
+        <p style="font-size:1.3rem; margin:0 0 4px;">Ceci certifie que</p>
+        <p style="font-size:1.8rem; font-weight:700; color:var(--accent); margin:0 0 18px;" id="certNameDisplay">${escapeHtml(savedName) || "________________"}</p>
+        <p style="max-width:480px; margin:0 auto 20px; color:var(--text-muted);">a terminé avec succès les 7 mondes du Parcours Dev : des bases du HTML jusqu'à la publication en ligne d'un projet complet, en passant par CSS, JavaScript, la création d'une application et le développement d'un jeu.</p>
+        <p style="font-weight:600;">Terminé le ${completionDate} · ${progress.xp} XP au total</p>
+      </div>
+      <div class="no-print" style="text-align:center; margin-top:14px;">
+        <button class="btn" id="printCertBtn">🖨️ Imprimer / Enregistrer en PDF</button>
+      </div>
+    </div>
+  `));
+
+  document.getElementById("certSaveBtn").addEventListener("click", ()=>{
+    const name = document.getElementById("certName").value.trim();
+    try{ localStorage.setItem("ia-academy-cert-name", name); }catch(e){}
+    document.getElementById("certNameDisplay").textContent = name || "________________";
+  });
+  document.getElementById("printCertBtn").addEventListener("click", ()=> window.print());
+}
+
+/* =========================================================
+   1.6 DÉFI DU JOUR (Accueil)
+   ========================================================= */
+function getDailyProgress(){
+  try{
+    return JSON.parse(localStorage.getItem("ia-academy-daily")) || { streak:{count:0,lastDate:null}, lastAnswerDate:null, lastCorrect:null };
+  }catch(e){
+    return { streak:{count:0,lastDate:null}, lastAnswerDate:null, lastCorrect:null };
+  }
+}
+function saveDailyProgress(p){
+  try{ localStorage.setItem("ia-academy-daily", JSON.stringify(p)); }catch(e){}
+}
+function getDailyChallenge(){
+  const seedStr = todayStr();
+  let seed = 0;
+  for(const ch of seedStr) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  return QUIZ[seed % QUIZ.length];
+}
+function renderDailyChallengeCard(){
+  const progress = getDailyProgress();
+  const today = todayStr();
+  const alreadyDone = progress.lastAnswerDate === today;
+  const card = el(`<div class="card" id="dailyCard" style="border:2px solid var(--accent);"></div>`);
+
+  if(alreadyDone){
+    card.innerHTML = `
+      <h3 style="margin:0 0 8px;">🎯 Défi du jour</h3>
+      <p style="margin:0; color:var(--text-muted);">${progress.lastCorrect ? "✅ Réussi !" : "Fait !"} Série actuelle : 🔥 ${progress.streak.count} jour${progress.streak.count>1?"s":""}. Reviens demain pour le prochain défi.</p>
+    `;
+    return card;
+  }
+
+  const q = getDailyChallenge();
+  card.innerHTML = `
+    <h3 style="margin:0 0 10px;">🎯 Défi du jour <span class="tag">🔥 ${progress.streak.count}</span></h3>
+    <div class="quiz-q">${q.q}</div>
+    <div class="quiz-options"></div>
+    <div class="quiz-exp" style="display:none;"></div>
+  `;
+  const optsDiv = card.querySelector(".quiz-options");
+  const expDiv = card.querySelector(".quiz-exp");
+  let done = false;
+  q.options.forEach((opt, oi)=>{
+    const optEl = el(`<div class="quiz-option">${opt}</div>`);
+    optEl.addEventListener("click", ()=>{
+      if(done) return;
+      done = true;
+      const isCorrect = oi === q.r;
+      optEl.classList.add(isCorrect ? "correct" : "wrong");
+      if(!isCorrect) optsDiv.children[q.r].classList.add("correct");
+      expDiv.style.display = "block";
+      expDiv.textContent = "💡 " + q.exp;
+
+      const p = getDailyProgress();
+      if(p.streak.lastDate === today){
+        // déjà compté aujourd'hui (sécurité)
+      }else if(p.streak.lastDate && daysBetween(p.streak.lastDate, today) === 1){
+        p.streak.count += 1;
+      }else{
+        p.streak.count = 1;
+      }
+      p.streak.lastDate = today;
+      p.lastAnswerDate = today;
+      p.lastCorrect = isCorrect;
+      saveDailyProgress(p);
+    });
+    optsDiv.appendChild(optEl);
+  });
+  return card;
+}
+
+/* =========================================================
+   1.7 FLASHCARDS — révision façon Anki, sur concepts + glossaire
+   ========================================================= */
+function getFlashProgress(){
+  try{
+    return JSON.parse(localStorage.getItem("ia-academy-flashcards")) || { srs:{}, reviewCount:0 };
+  }catch(e){
+    return { srs:{}, reviewCount:0 };
+  }
+}
+function saveFlashProgress(p){
+  try{ localStorage.setItem("ia-academy-flashcards", JSON.stringify(p)); }catch(e){}
+}
+function buildFlashcardDeck(){
+  const fromConcepts = CONCEPTS.map(c => ({ id:"c_"+c.id, front:c.titre, back:c.def }));
+  const fromGloss = GLOSSAIRE.map((g,i) => ({ id:"g_"+i, front:g.terme, back:g.def }));
+  return [...fromConcepts, ...fromGloss];
+}
+function scheduleFlashReview(progress, cardId, success){
+  const prev = progress.srs[cardId];
+  const interval = success ? (prev ? Math.min(prev.interval * 2, 30) : 1) : 1;
+  const due = new Date();
+  due.setDate(due.getDate() + interval);
+  progress.srs[cardId] = { interval, due: due.toISOString().slice(0,10) };
+  progress.reviewCount = (progress.reviewCount || 0) + 1;
+}
+function getDueFlashcards(deck, progress, limit){
+  const today = todayStr();
+  const due = deck.filter(c => !progress.srs[c.id] || progress.srs[c.id].due <= today);
+  return limit ? due.slice(0, limit) : due;
+}
+
+function renderFlashcards(){
+  const deck = buildFlashcardDeck();
+  const progress = getFlashProgress();
+  const dueCount = getDueFlashcards(deck, progress).length;
+  const masteredCount = Object.values(progress.srs).filter(s => s.interval >= 16).length;
+
+  content.appendChild(el(`<h2 class="section-title">🃏 Flashcards</h2>`));
+  content.appendChild(el(`<p class="section-sub">Révise les concepts et le glossaire façon Anki : retourne la carte, dis si tu savais ou non. Les cartes que tu maîtrises reviennent de moins en moins souvent, celles que tu oublies reviennent plus vite.</p>`));
+
+  content.appendChild(el(`
+    <div class="grid grid-3" style="margin-bottom:20px;">
+      <div class="card" style="margin-bottom:0; text-align:center;">
+        <div style="font-size:1.6rem; font-weight:700;">${deck.length}</div>
+        <div style="color:var(--text-muted); font-size:.85rem;">Cartes au total</div>
+      </div>
+      <div class="card" style="margin-bottom:0; text-align:center;">
+        <div style="font-size:1.6rem; font-weight:700;">${dueCount}</div>
+        <div style="color:var(--text-muted); font-size:.85rem;">À réviser aujourd'hui</div>
+      </div>
+      <div class="card" style="margin-bottom:0; text-align:center;">
+        <div style="font-size:1.6rem; font-weight:700;">${masteredCount}</div>
+        <div style="color:var(--text-muted); font-size:.85rem;">Cartes bien maîtrisées</div>
+      </div>
+    </div>
+  `));
+
+  const startCard = el(`<div class="card" style="text-align:center;"></div>`);
+  if(dueCount === 0){
+    startCard.innerHTML = `<p style="margin:0 0 12px; color:var(--text-muted);">Aucune carte à réviser pour le moment, tout est à jour ! 🎉</p><button class="btn secondary" id="reviewAnywayBtn">Réviser quand même quelques cartes</button>`;
+  }else{
+    startCard.innerHTML = `<button class="btn" id="startFlashBtn">▶️ Commencer la session (${Math.min(dueCount, 15)} carte${Math.min(dueCount,15)>1?"s":""})</button>`;
+  }
+  content.appendChild(startCard);
+
+  const startBtn = document.getElementById("startFlashBtn");
+  if(startBtn) startBtn.addEventListener("click", ()=> startFlashSession(getDueFlashcards(deck, progress, 15)));
+  const anywayBtn = document.getElementById("reviewAnywayBtn");
+  if(anywayBtn) anywayBtn.addEventListener("click", ()=>{
+    const shuffled = [...deck].sort(()=> Math.random() - 0.5).slice(0, 15);
+    startFlashSession(shuffled);
+  });
+}
+
+function startFlashSession(queue){
+  let idx = 0;
+  let correctCount = 0;
+  renderFlashCard();
+
+  function renderFlashCard(){
+    content.innerHTML = "";
+    if(idx >= queue.length){
+      content.appendChild(el(`
+        <div class="card" style="text-align:center;">
+          <h3 style="margin:0 0 10px;">🎉 Session terminée !</h3>
+          <p style="color:var(--text-muted); margin:0 0 16px;">${correctCount} / ${queue.length} cartes déjà connues.</p>
+          <a class="btn" href="#flashcards">Retour aux flashcards</a>
+        </div>
+      `));
+      return;
+    }
+    const card = queue[idx];
+    content.appendChild(el(`<p class="section-sub">Carte ${idx+1} / ${queue.length}</p>`));
+    const cardEl = el(`
+      <div class="card" style="text-align:center; min-height:180px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <div style="font-size:1.3rem; font-weight:700;">${escapeHtml(card.front)}</div>
+        <div id="cardBack" style="display:none; color:var(--text-muted); margin-top:16px; max-width:520px;">${escapeHtml(card.back)}</div>
+      </div>
+    `);
+    content.appendChild(cardEl);
+
+    const flipBtn = el(`<button class="btn secondary" style="display:block; margin:16px auto;">🔄 Retourner la carte</button>`);
+    content.appendChild(flipBtn);
+    const answerRow = el(`<div style="display:none; gap:12px; justify-content:center;"></div>`);
+    answerRow.appendChild(el(`<button class="btn" style="background:var(--danger);">❌ Je ne savais pas</button>`));
+    answerRow.appendChild(el(`<button class="btn" style="background:var(--success);">✅ Je savais</button>`));
+    content.appendChild(answerRow);
+
+    flipBtn.addEventListener("click", ()=>{
+      cardEl.querySelector("#cardBack").style.display = "block";
+      flipBtn.style.display = "none";
+      answerRow.style.display = "flex";
+    });
+    answerRow.children[0].addEventListener("click", ()=> gradeCard(false));
+    answerRow.children[1].addEventListener("click", ()=> gradeCard(true));
+
+    function gradeCard(success){
+      const progress = getFlashProgress();
+      scheduleFlashReview(progress, card.id, success);
+      saveFlashProgress(progress);
+      if(success) correctCount++;
+      idx++;
+      renderFlashCard();
+    }
+  }
+}
+
+/* =========================================================
+   1.8 RECHERCHE GLOBALE
+   ========================================================= */
+function buildSearchIndex(){
+  const idx = [];
+  CONCEPTS.forEach(c => idx.push({ type:"Concept", label:c.titre, sub:c.def.slice(0,90), hash:"#concepts", inputId:"conceptSearch", term:c.titre }));
+  GLOSSAIRE.forEach(g => idx.push({ type:"Glossaire", label:g.terme, sub:g.def.slice(0,90), hash:"#glossaire", inputId:"glossSearch", term:g.terme }));
+  OUTILS_IA.forEach(o => idx.push({ type:"Comparatif", label:o.nom, sub:o.idealPour, hash:"#comparatif" }));
+  CAS_USAGE.forEach(u => idx.push({ type:"Cas d'usage", label:u.domaine, sub:u.exemples[0], hash:"#usages" }));
+  DEV_PATH.forEach(m => m.lecons.forEach(l => idx.push({ type:"Parcours Dev", label:l.titre, sub:m.titre, hash:`#dev/${m.id}/${l.id}` })));
+  return idx;
+}
+let SEARCH_INDEX = null;
+function openSearchModal(){
+  if(!SEARCH_INDEX) SEARCH_INDEX = buildSearchIndex();
+  const overlay = el(`
+    <div class="search-overlay" id="searchOverlay">
+      <div class="search-box-modal">
+        <input type="text" id="searchInput" placeholder="🔍 Chercher dans toute l'app (concepts, glossaire, outils, leçons...)">
+        <div id="searchResults"></div>
+      </div>
+    </div>
+  `);
+  document.body.appendChild(overlay);
+  const input = document.getElementById("searchInput");
+  const results = document.getElementById("searchResults");
+  input.focus();
+
+  function draw(q){
+    results.innerHTML = "";
+    if(!q){ return; }
+    const f = q.toLowerCase();
+    const matches = SEARCH_INDEX.filter(r => r.label.toLowerCase().includes(f) || (r.sub && r.sub.toLowerCase().includes(f))).slice(0, 20);
+    if(matches.length === 0){
+      results.appendChild(el(`<p style="color:var(--text-muted); padding:10px;">Aucun résultat.</p>`));
+      return;
+    }
+    matches.forEach(m=>{
+      const item = el(`
+        <div class="search-result">
+          <span class="tag">${m.type}</span>
+          <div style="font-weight:600; margin-top:4px;">${escapeHtml(m.label)}</div>
+          <div style="font-size:.82rem; color:var(--text-muted);">${escapeHtml(m.sub || "")}</div>
+        </div>
+      `);
+      item.addEventListener("click", ()=>{
+        closeSearchModal();
+        location.hash = m.hash;
+        if(m.inputId && m.term){
+          setTimeout(()=>{
+            const inp = document.getElementById(m.inputId);
+            if(inp){ inp.value = m.term; inp.dispatchEvent(new Event("input")); }
+          }, 60);
+        }
+      });
+      results.appendChild(item);
+    });
+  }
+  input.addEventListener("input", (e)=> draw(e.target.value));
+  overlay.addEventListener("click", (e)=>{ if(e.target === overlay) closeSearchModal(); });
+  document.addEventListener("keydown", escListener);
+}
+function escListener(e){
+  if(e.key === "Escape") closeSearchModal();
+}
+function closeSearchModal(){
+  const overlay = document.getElementById("searchOverlay");
+  if(overlay) overlay.remove();
+  document.removeEventListener("keydown", escListener);
+}
+
+/* =========================================================
+   1.9 RÉGLAGES — export / import / reset de la progression
+   ========================================================= */
+const SAVE_KEYS = ["ia-academy-theme","ia-academy-progress","ia-academy-devpath","ia-academy-flashcards","ia-academy-daily","ia-academy-cert-name"];
+function renderReglages(){
+  content.appendChild(el(`<h2 class="section-title">⚙️ Réglages</h2>`));
+  content.appendChild(el(`<p class="section-sub">Toute ta progression (XP, streak, révisions, flashcards, checklists) est stockée uniquement dans ce navigateur. Si tu vides le cache ou changes d'appareil, elle disparaît — sauvegarde-la ici si tu veux la garder.</p>`));
+
+  content.appendChild(el(`
+    <div>
+      <div class="card">
+        <h3>💾 Sauvegarder ma progression</h3>
+        <p style="color:var(--text-muted); margin:0 0 12px;">Télécharge un fichier contenant tout ton avancement (Parcours Dev, flashcards, exercices, défi du jour).</p>
+        <button class="btn" id="exportBtn">⬇️ Télécharger ma sauvegarde</button>
+      </div>
+      <div class="card">
+        <h3>📂 Restaurer une sauvegarde</h3>
+        <p style="color:var(--text-muted); margin:0 0 12px;">Choisis un fichier de sauvegarde précédemment téléchargé pour retrouver ta progression (ça remplace la progression actuelle de ce navigateur).</p>
+        <input type="file" id="importInput" accept="application/json">
+      </div>
+      <div class="card">
+        <h3>🗑️ Réinitialiser</h3>
+        <p style="color:var(--text-muted); margin:0 0 12px;">Efface toute la progression de ce navigateur (irréversible).</p>
+        <button class="btn secondary" id="resetBtn" style="border-color:var(--danger); color:var(--danger);">Réinitialiser toute ma progression</button>
+      </div>
+    </div>
+  `));
+
+  document.getElementById("exportBtn").addEventListener("click", ()=>{
+    const bundle = {};
+    SAVE_KEYS.forEach(k=>{
+      const v = localStorage.getItem(k);
+      if(v !== null) bundle[k] = v;
+    });
+    const blob = new Blob([JSON.stringify(bundle, null, 2)], { type:"application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ia-academy-sauvegarde-${todayStr()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById("importInput").addEventListener("change", (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      try{
+        const bundle = JSON.parse(ev.target.result);
+        SAVE_KEYS.forEach(k=>{
+          if(bundle[k] !== undefined) localStorage.setItem(k, bundle[k]);
+        });
+        alert("Sauvegarde restaurée ! La page va se recharger.");
+        location.reload();
+      }catch(err){
+        alert("Ce fichier ne semble pas être une sauvegarde valide.");
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", ()=>{
+    if(!confirm("Es-tu sûr de vouloir tout réinitialiser ? Cette action est irréversible.")) return;
+    SAVE_KEYS.forEach(k => localStorage.removeItem(k));
+    alert("Progression réinitialisée.");
+    location.hash = "#accueil";
+    location.reload();
   });
 }
 
