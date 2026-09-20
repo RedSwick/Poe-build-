@@ -1,0 +1,669 @@
+/* =========================================================
+   DONNÉES DE L'APPLICATION "IA Academy"
+   Toutes les données affichées par l'app sont ici.
+   Pour mettre à jour l'app (nouvelles IA, nouveaux termes...),
+   c'est ce fichier qu'il faut modifier.
+   ========================================================= */
+
+const APP_META = {
+  lastUpdate: "2026-01",
+  note: "Ce contenu est une photographie de l'écosystème IA à la date ci-dessus. L'IA avance vite : va voir la section « Rester à jour » pour savoir où suivre les vraies nouveautés en continu."
+};
+
+/* ---------------------------------------------------------
+   1. CONCEPTS — explications grand public
+   --------------------------------------------------------- */
+const CONCEPTS = [
+  {
+    id: "ia",
+    titre: "Intelligence Artificielle (IA)",
+    niveau: "Débutant",
+    def: "Un ensemble de techniques informatiques qui permettent à une machine de réaliser des tâches qui demandent normalement une forme d'intelligence humaine : comprendre du texte, reconnaître une image, prendre une décision, générer du contenu.",
+    analogie: "Comme apprendre à un enfant à reconnaître un chat en lui montrant des milliers de photos, plutôt que de lui donner une liste de règles (« un chat a 4 pattes, des moustaches... »).",
+    exemple: "Le correcteur orthographique, les recommandations Netflix, ChatGPT, la reconnaissance faciale de ton téléphone."
+  },
+  {
+    id: "ml",
+    titre: "Machine Learning (apprentissage automatique)",
+    niveau: "Débutant",
+    def: "Une branche de l'IA où, au lieu de programmer des règles explicites, on montre à la machine énormément d'exemples pour qu'elle « apprenne » elle-même les règles.",
+    analogie: "Plutôt que de coder « si email contient 'gagné un iPhone' alors spam », on montre à la machine 100 000 emails déjà classés spam/non-spam et elle trouve les motifs toute seule.",
+    exemple: "Filtres anti-spam, détection de fraude bancaire, prédiction météo."
+  },
+  {
+    id: "dl",
+    titre: "Deep Learning (apprentissage profond) & réseaux de neurones",
+    niveau: "Intermédiaire",
+    def: "Une famille de techniques de Machine Learning basée sur des « réseaux de neurones artificiels » empilés en plusieurs couches (d'où « profond »), inspirés très librement du cerveau humain.",
+    analogie: "Chaque couche du réseau détecte des motifs de plus en plus complexes : la 1ère couche voit des contours, la 2e des formes, la 3e des objets... jusqu'à reconnaître « c'est un visage ».",
+    exemple: "La reconnaissance vocale, la génération d'images (Midjourney), les LLM comme ChatGPT ou Claude."
+  },
+  {
+    id: "llm",
+    titre: "LLM — Large Language Model (grand modèle de langage)",
+    niveau: "Débutant",
+    def: "Un type d'IA entraînée sur d'énormes quantités de texte pour prédire, mot après mot, la suite la plus probable d'un texte. C'est la technologie derrière ChatGPT, Claude, Gemini, Mistral...",
+    analogie: "Comme la correction automatique de ton téléphone qui propose le mot suivant, mais poussée à un niveau si avancé qu'elle peut écrire un article, du code, ou raisonner sur un problème.",
+    exemple: "Claude, ChatGPT, Gemini, Llama, Mistral."
+  },
+  {
+    id: "transformer",
+    titre: "Transformer & mécanisme d'attention",
+    niveau: "Avancé",
+    def: "L'architecture (le « plan de construction ») utilisée par la quasi-totalité des LLM depuis 2017 (papier « Attention Is All You Need »). Son innovation clé, l'« attention », permet au modèle de regarder tous les mots d'une phrase en même temps et de pondérer leur importance les uns par rapport aux autres.",
+    analogie: "Quand tu lis « la souris que le chat a mangée », ton cerveau relie automatiquement « mangée » à « souris » et pas à « chat ». Le mécanisme d'attention fait la même chose : il calcule quels mots doivent « se parler » entre eux.",
+    exemple: "C'est ce qui permet à un LLM de comprendre qu'une pronom fait référence à quelque chose dit 200 mots plus tôt."
+  },
+  {
+    id: "token",
+    titre: "Token",
+    niveau: "Débutant",
+    def: "L'unité de base que traite un LLM. Ce n'est ni tout à fait une lettre, ni tout à fait un mot : c'est un petit morceau de texte (souvent une syllabe ou un mot court). Le texte que tu écris est « découpé » en tokens avant d'être traité.",
+    analogie: "Comme des Lego : le mot « incroyable » peut être découpé en 2-3 blocs (« in », « croy », « able »).",
+    exemple: "En anglais, 1 token ≈ 0,75 mot. Les IA facturent souvent au token, et ont une limite de tokens qu'elles peuvent lire/écrire d'un coup (voir « fenêtre de contexte »)."
+  },
+  {
+    id: "contexte",
+    titre: "Fenêtre de contexte (context window)",
+    niveau: "Intermédiaire",
+    def: "La quantité maximale de texte (en tokens) qu'un modèle peut « garder en tête » en même temps : ta conversation, les documents que tu lui donnes, et sa réponse.",
+    analogie: "C'est comme la taille du bureau sur lequel l'IA peut étaler ses feuilles : plus le bureau est grand, plus elle peut consulter de documents à la fois sans en oublier.",
+    exemple: "Certains modèles récents gèrent des fenêtres de plusieurs centaines de milliers de tokens, permettant d'analyser un livre entier en une fois."
+  },
+  {
+    id: "entrainement",
+    titre: "Entraînement (pré-entraînement) vs Fine-tuning",
+    niveau: "Intermédiaire",
+    def: "Le pré-entraînement, c'est la phase où le modèle apprend le langage en lisant une immense quantité de textes (des mois de calcul, des millions d'euros). Le fine-tuning, c'est une phase courte et légère où l'on ré-entraîne un peu ce modèle déjà compétent pour le spécialiser sur une tâche précise.",
+    analogie: "Le pré-entraînement, c'est faire des études générales. Le fine-tuning, c'est une formation professionnelle courte pour se spécialiser dans un métier.",
+    exemple: "Un modèle généraliste fine-tuné pour répondre uniquement sur la documentation d'une entreprise, dans le style de sa marque."
+  },
+  {
+    id: "rlhf",
+    titre: "RLHF (apprentissage par renforcement avec retour humain)",
+    niveau: "Avancé",
+    def: "Une méthode d'entraînement où des humains notent/classent les réponses du modèle (laquelle est la meilleure), et le modèle apprend à produire des réponses qui plaisent davantage — plus utiles, plus sûres, plus polies.",
+    analogie: "Comme dresser un chien avec des friandises : chaque bonne réponse est « récompensée », ce qui pousse le modèle à répéter ce type de comportement.",
+    exemple: "C'est une des raisons pour lesquelles ChatGPT ou Claude répondent de façon posée et refusent certaines demandes dangereuses."
+  },
+  {
+    id: "prompt",
+    titre: "Prompt & prompt engineering",
+    niveau: "Débutant",
+    def: "Le « prompt », c'est simplement l'instruction ou la question que tu tapes à une IA. Le « prompt engineering », c'est l'art de bien formuler cette instruction pour obtenir la meilleure réponse possible.",
+    analogie: "C'est comme donner une consigne à un stagiaire très compétent mais qui ne connaît rien de ton contexte : plus tu es précis, meilleur sera le résultat.",
+    exemple: "Voir la section « Prompt Engineering » de cette app, avec un générateur de prompt intégré."
+  },
+  {
+    id: "hallucination",
+    titre: "Hallucination",
+    niveau: "Débutant",
+    def: "Quand une IA génère une information fausse, inventée, mais présentée avec assurance comme si c'était vrai (une fausse date, une fausse citation, un faux lien, une fausse référence).",
+    analogie: "Comme un élève qui n'a pas révisé mais qui invente une réponse plausible à l'oral plutôt que de dire « je ne sais pas ».",
+    exemple: "Une IA qui invente un article scientifique avec un titre et des auteurs crédibles... mais qui n'existe pas. Toujours vérifier les faits importants."
+  },
+  {
+    id: "rag",
+    titre: "RAG (Retrieval-Augmented Generation)",
+    niveau: "Avancé",
+    def: "Une technique qui donne à un LLM l'accès à des documents externes (une base de connaissances, le web, tes fichiers) au moment de répondre, pour qu'il s'appuie sur des infos réelles et à jour plutôt que sur sa seule mémoire d'entraînement.",
+    analogie: "Plutôt que de demander à quelqu'un de répondre uniquement « de mémoire », on le laisse consulter une bibliothèque avant de répondre.",
+    exemple: "Un chatbot d'entreprise qui va chercher dans les documents internes avant de répondre à un employé."
+  },
+  {
+    id: "agent",
+    titre: "Agent IA",
+    niveau: "Avancé",
+    def: "Une IA à qui l'on donne un objectif et des outils (naviguer sur le web, exécuter du code, envoyer un email...) et qui décide elle-même des étapes à suivre pour atteindre cet objectif, de façon autonome ou semi-autonome.",
+    analogie: "La différence entre un GPS qui te donne un itinéraire (LLM classique) et un chauffeur autonome qui conduit vraiment la voiture (agent).",
+    exemple: "Claude Code (qui exécute des actions dans un vrai projet), un agent qui réserve un voyage en cherchant sur plusieurs sites."
+  },
+  {
+    id: "multimodal",
+    titre: "Multimodal",
+    niveau: "Intermédiaire",
+    def: "Une IA capable de comprendre et/ou générer plusieurs types de contenus : texte, image, audio, vidéo — pas seulement du texte.",
+    analogie: "Comme une personne qui peut aussi bien lire un livre, regarder une photo et écouter un enregistrement, et faire le lien entre les trois.",
+    exemple: "Envoyer une photo à Claude ou ChatGPT et demander une explication de ce qu'elle contient."
+  },
+  {
+    id: "openweight",
+    titre: "Modèle open-weight vs fermé (propriétaire)",
+    niveau: "Intermédiaire",
+    def: "Un modèle « open-weight » met à disposition ses paramètres entraînés : n'importe qui peut le télécharger et le faire tourner sur sa propre machine. Un modèle fermé n'est accessible que via l'API ou l'interface de son créateur.",
+    analogie: "C'est la différence entre télécharger un logiciel gratuit et pouvoir l'installer chez soi, ou devoir passer par un site web qui l'héberge à distance.",
+    exemple: "Llama (Meta) et Mistral proposent des versions open-weight. Claude, ChatGPT et Gemini restent fermés."
+  },
+  {
+    id: "quantization",
+    titre: "Quantization",
+    niveau: "Avancé",
+    def: "Une technique qui réduit la précision numérique des paramètres d'un modèle (par ex. de 16 bits à 4 bits) pour qu'il prenne moins de mémoire et tourne plus vite, au prix d'une (petite) perte de qualité.",
+    analogie: "Comme compresser une photo en JPEG : le fichier est bien plus léger, la qualité baisse un peu mais reste largement utilisable.",
+    exemple: "C'est ce qui permet de faire tourner un modèle de plusieurs milliards de paramètres sur un simple ordinateur portable (voir la section « IA en local »)."
+  },
+  {
+    id: "embedding",
+    titre: "Embedding (vecteur)",
+    niveau: "Avancé",
+    def: "Une façon de transformer un mot, une phrase ou une image en une liste de nombres (un « vecteur ») qui capture son sens, de façon à ce que des éléments de sens proche aient des vecteurs proches.",
+    analogie: "Comme placer chaque mot sur une carte géographique du sens : « roi » et « reine » seront voisins, « voiture » sera loin des deux.",
+    exemple: "Les moteurs de recherche sémantique et les systèmes de RAG utilisent des embeddings pour retrouver les documents les plus pertinents."
+  },
+  {
+    id: "moe",
+    titre: "Mixture of Experts (MoE)",
+    niveau: "Avancé",
+    def: "Une architecture où le modèle est composé de plusieurs sous-réseaux « experts » spécialisés, et où seul un petit sous-ensemble d'experts est activé pour chaque requête, ce qui rend le modèle plus rapide et moins coûteux à faire tourner malgré sa grande taille totale.",
+    analogie: "Comme un hôpital avec plein de spécialistes : on ne consulte pas tous les médecins pour un rhume, juste le généraliste (et parfois un spécialiste précis).",
+    exemple: "Plusieurs modèles récents très performants utilisent cette architecture pour rester rapides malgré leur taille."
+  },
+  {
+    id: "alignement",
+    titre: "Alignement & sécurité de l'IA",
+    niveau: "Intermédiaire",
+    def: "L'ensemble des recherches et techniques visant à faire en sorte qu'une IA agisse conformément aux intentions et aux valeurs humaines (utile, honnête, inoffensive), même quand elle devient très capable.",
+    analogie: "Comme s'assurer qu'un employé très compétent et autonome comprenne bien les objectifs de l'entreprise et ses limites, sans qu'on ait à surveiller chacune de ses actions.",
+    exemple: "Les garde-fous qui empêchent une IA de donner des instructions dangereuses, les tests de sécurité avant la sortie d'un nouveau modèle."
+  },
+  {
+    id: "agi",
+    titre: "AGI (Intelligence Artificielle Générale)",
+    niveau: "Débutant",
+    def: "Un niveau d'IA hypothétique qui égalerait ou dépasserait l'intelligence humaine sur (quasiment) toutes les tâches cognitives, et non sur une tâche précise comme les IA actuelles. L'AGI n'existe pas encore : c'est un objectif de recherche et un sujet très débattu.",
+    analogie: "La différence entre un champion d'échecs artificiel (excellent sur UNE tâche) et un humain (capable de milliers de tâches différentes).",
+    exemple: "Les grands laboratoires (OpenAI, Anthropic, Google DeepMind...) citent l'AGI comme un horizon de recherche, mais le calendrier et même la définition exacte font débat."
+  }
+];
+
+/* ---------------------------------------------------------
+   2. GLOSSAIRE — termes courts, en plus des concepts ci-dessus
+   --------------------------------------------------------- */
+const GLOSSAIRE = [
+  { terme: "API", def: "Une interface qui permet à un programme d'utiliser une IA « par le code », sans passer par une interface de chat." },
+  { terme: "System prompt", def: "Une instruction cachée donnée à l'IA avant la conversation, qui définit son rôle, son ton, ses règles de base." },
+  { terme: "Zero-shot / Few-shot", def: "Demander une tâche sans exemple (zero-shot) ou en donnant 1 à quelques exemples pour montrer le format attendu (few-shot)." },
+  { terme: "Chain-of-thought (raisonnement en chaîne)", def: "Technique qui pousse l'IA à décomposer son raisonnement étape par étape avant de donner la réponse finale, ce qui améliore souvent la justesse." },
+  { terme: "Température", def: "Un réglage qui contrôle le niveau de créativité/aléatoire des réponses d'une IA : basse = réponses plus prévisibles, haute = plus variées/créatives." },
+  { terme: "Function calling / Tool use", def: "Capacité d'une IA à appeler des outils externes (calculatrice, recherche web, exécution de code) plutôt que de tout générer elle-même." },
+  { terme: "MCP (Model Context Protocol)", def: "Un protocole ouvert qui standardise la façon dont une IA se connecte à des outils et sources de données externes." },
+  { terme: "Benchmark", def: "Un test standardisé utilisé pour comparer les performances de différents modèles d'IA sur une tâche donnée." },
+  { terme: "GPU / TPU", def: "Des puces électroniques spécialisées, très efficaces pour les calculs massifs en parallèle nécessaires à l'IA (GPU = Nvidia notamment, TPU = puces Google)." },
+  { terme: "Open source", def: "Logiciel dont le code (parfois aussi les données et le modèle) est public et modifiable par tous." },
+  { terme: "Poids (weights)", def: "Les millions/milliards de paramètres numériques ajustés pendant l'entraînement, qui « contiennent » ce que le modèle a appris." },
+  { terme: "Latence", def: "Le temps que met une IA à répondre. Plus la latence est faible, plus la réponse arrive vite." },
+  { terme: "Jailbreak", def: "Une tentative de contourner les règles de sécurité d'une IA par une formulation détournée du prompt." },
+  { terme: "Guardrails (garde-fous)", def: "Les mécanismes techniques qui empêchent une IA de sortir de son cadre d'usage prévu ou de produire du contenu dangereux." },
+  { terme: "Deepfake", def: "Un contenu (image, vidéo, voix) généré ou modifié par IA pour imiter une vraie personne, parfois de façon trompeuse." },
+  { terme: "Biais algorithmique", def: "Une distorsion systématique dans les réponses d'une IA, souvent héritée des données d'entraînement (ex : sous-représentation d'un groupe)." },
+  { terme: "Distillation", def: "Technique qui entraîne un petit modèle à imiter le comportement d'un plus gros, pour obtenir des performances proches avec bien moins de ressources." },
+  { terme: "Inference (inférence)", def: "Le moment où un modèle déjà entraîné génère une réponse à partir d'une entrée — par opposition à l'entraînement." },
+  { terme: "LoRA", def: "Une méthode de fine-tuning légère qui n'ajuste qu'une petite partie des paramètres d'un modèle, rendant la spécialisation rapide et peu coûteuse." },
+  { terme: "Context caching", def: "Une optimisation qui mémorise une partie du contexte déjà traité pour accélérer et réduire le coût des requêtes suivantes." }
+];
+
+/* ---------------------------------------------------------
+   3. COMPARATIF DES IA
+   catégorie: texte | image | audio | video | code | recherche | tout-en-un
+   --------------------------------------------------------- */
+const OUTILS_IA = [
+  {
+    nom: "ChatGPT", entreprise: "OpenAI", categorie: "texte",
+    gratuit: true, payant: "À partir d'environ 20$/mois pour la version avancée",
+    forces: "Très polyvalent, immense écosystème de plugins/GPTs, bon en code et en rédaction.",
+    idealPour: "Usage général au quotidien, brainstorming, rédaction."
+  },
+  {
+    nom: "Claude", entreprise: "Anthropic", categorie: "texte",
+    gratuit: true, payant: "Offres payantes pour plus d'usage et de fonctionnalités avancées",
+    forces: "Réponses nuancées et bien structurées, excellent pour l'écriture longue, l'analyse de documents et la programmation (via Claude Code).",
+    idealPour: "Rédaction soignée, analyse de gros documents, développement logiciel."
+  },
+  {
+    nom: "Gemini", entreprise: "Google", categorie: "texte",
+    gratuit: true, payant: "Offre payante intégrée à Google One",
+    forces: "Très intégré à l'écosystème Google (Gmail, Docs, Search), bon en multimodal.",
+    idealPour: "Utilisateurs déjà dans l'écosystème Google, recherche d'informations récentes."
+  },
+  {
+    nom: "Mistral / Le Chat", entreprise: "Mistral AI (France)", categorie: "texte",
+    gratuit: true, payant: "Offres payantes pour plus de capacités",
+    forces: "Acteur européen, certains modèles open-weight téléchargeables, rapide.",
+    idealPour: "Ceux qui veulent une alternative européenne ou des modèles à faire tourner en local."
+  },
+  {
+    nom: "Llama", entreprise: "Meta", categorie: "texte",
+    gratuit: true, payant: "Gratuit (open-weight), coût seulement si hébergé sur du cloud payant",
+    forces: "Modèle ouvert téléchargeable, grande communauté, personnalisable.",
+    idealPour: "Faire tourner une IA en local ou construire son propre produit dessus."
+  },
+  {
+    nom: "Perplexity", entreprise: "Perplexity AI", categorie: "recherche",
+    gratuit: true, payant: "Abonnement pour recherches illimitées et modèles avancés",
+    forces: "Réponses sourcées avec liens vers les pages consultées, pensé comme moteur de recherche augmenté.",
+    idealPour: "Recherche d'informations fiables et vérifiables avec sources."
+  },
+  {
+    nom: "GitHub Copilot", entreprise: "Microsoft/GitHub", categorie: "code",
+    gratuit: true, payant: "Abonnement mensuel pour usage professionnel complet",
+    forces: "Intégré directement dans l'éditeur de code, autocomplétion et chat pour coder.",
+    idealPour: "Développeurs qui codent dans un IDE classique (VS Code, JetBrains...)."
+  },
+  {
+    nom: "Claude Code / Cursor / Windsurf", entreprise: "Anthropic / autres", categorie: "code",
+    gratuit: false, payant: "Payant selon usage (souvent basé sur l'API)",
+    forces: "Agents de code capables de modifier plusieurs fichiers, lancer des commandes, corriger des bugs de façon autonome.",
+    idealPour: "Développer ou apprendre à coder avec une IA qui agit directement dans le projet."
+  },
+  {
+    nom: "Midjourney", entreprise: "Midjourney Inc.", categorie: "image",
+    gratuit: false, payant: "À partir d'environ 10$/mois",
+    forces: "Qualité artistique très reconnue pour la génération d'images.",
+    idealPour: "Illustration, concept art, création visuelle esthétique."
+  },
+  {
+    nom: "DALL·E / Sora", entreprise: "OpenAI", categorie: "image",
+    gratuit: true, payant: "Inclus dans les offres payantes de ChatGPT",
+    forces: "Génération d'images (DALL·E) et de vidéos courtes (Sora) directement liée à ChatGPT.",
+    idealPour: "Génération rapide d'images/vidéos sans changer d'outil."
+  },
+  {
+    nom: "Stable Diffusion", entreprise: "Stability AI", categorie: "image",
+    gratuit: true, payant: "Gratuit en local (open-weight), payant via certains services cloud",
+    forces: "Open-weight, personnalisable, peut tourner en local avec une carte graphique correcte.",
+    idealPour: "Ceux qui veulent générer des images en local, gratuitement, avec contrôle total."
+  },
+  {
+    nom: "ElevenLabs", entreprise: "ElevenLabs", categorie: "audio",
+    gratuit: true, payant: "Abonnements selon volume de génération",
+    forces: "Synthèse vocale et clonage de voix très réalistes.",
+    idealPour: "Voix off, doublage, podcasts, accessibilité."
+  },
+  {
+    nom: "Suno", entreprise: "Suno", categorie: "audio",
+    gratuit: true, payant: "Abonnements pour plus de générations et usage commercial",
+    forces: "Génère des chansons complètes (paroles + musique) à partir d'un simple prompt.",
+    idealPour: "Créer rapidement des morceaux de musique originaux."
+  },
+  {
+    nom: "NotebookLM", entreprise: "Google", categorie: "recherche",
+    gratuit: true, payant: "Offre payante pour plus d'usage",
+    forces: "Analyse tes propres documents et répond en se basant uniquement dessus (réduit les hallucinations), génère même des résumés audio façon podcast.",
+    idealPour: "Étudier, synthétiser ses cours ou documents de travail."
+  },
+  {
+    nom: "HuggingChat / Hugging Face", entreprise: "Hugging Face", categorie: "tout-en-un",
+    gratuit: true, payant: "Certains services payants pour l'hébergement de modèles",
+    forces: "Portail central de l'open source en IA : des milliers de modèles téléchargeables gratuitement.",
+    idealPour: "Explorer et tester des modèles open-weight, apprendre en profondeur."
+  },
+  {
+    nom: "DeepSeek", entreprise: "DeepSeek", categorie: "texte",
+    gratuit: true, payant: "Coût réduit via API",
+    forces: "Performances élevées pour un coût d'utilisation très bas, versions open-weight disponibles.",
+    idealPour: "Alternative économique performante, y compris en local."
+  }
+];
+
+/* ---------------------------------------------------------
+   4. CAS D'USAGE PAR DOMAINE
+   --------------------------------------------------------- */
+const CAS_USAGE = [
+  {
+    domaine: "Éducation",
+    icone: "🎓",
+    exemples: [
+      "Tuteur personnalisé disponible 24h/24 pour expliquer un exercice différemment jusqu'à ce que ça soit compris.",
+      "Génération de fiches de révision et de quiz personnalisés à partir de cours.",
+      "Correction et amélioration de dissertations avec des retours détaillés.",
+      "Traduction et simplification de textes complexes pour l'apprentissage des langues."
+    ]
+  },
+  {
+    domaine: "Santé",
+    icone: "🩺",
+    exemples: [
+      "Aide au diagnostic par analyse d'images médicales (radios, scanners) en soutien du médecin.",
+      "Découverte de nouvelles molécules pour accélérer la recherche pharmaceutique.",
+      "Résumé automatique de dossiers médicaux volumineux pour les soignants.",
+      "Chatbots de premier niveau pour orienter les patients (jamais un substitut à un vrai avis médical)."
+    ]
+  },
+  {
+    domaine: "Entreprise & productivité",
+    icone: "💼",
+    exemples: [
+      "Rédaction d'emails, de comptes-rendus de réunion et de présentations.",
+      "Automatisation de tâches répétitives (tri d'emails, extraction de données de factures).",
+      "Assistance à la décision par analyse rapide de gros volumes de données.",
+      "Service client automatisé (chatbots) pour les questions fréquentes."
+    ]
+  },
+  {
+    domaine: "Création (image, vidéo, musique)",
+    icone: "🎨",
+    exemples: [
+      "Génération d'illustrations, de logos, de concept-arts en quelques secondes.",
+      "Création de courtes vidéos ou d'animations à partir d'un simple texte.",
+      "Composition de musiques originales pour des projets personnels ou commerciaux.",
+      "Retouche photo intelligente (suppression d'objets, changement de fond, upscaling)."
+    ]
+  },
+  {
+    domaine: "Développement logiciel",
+    icone: "💻",
+    exemples: [
+      "Autocomplétion et génération de code dans l'éditeur.",
+      "Agents capables de créer une application entière à partir d'une description.",
+      "Détection de bugs, revue de code automatique, génération de tests.",
+      "Explication de code existant pour comprendre un projet inconnu."
+    ]
+  },
+  {
+    domaine: "Vie quotidienne",
+    icone: "🏠",
+    exemples: [
+      "Planification de repas et de courses selon des contraintes (budget, allergies).",
+      "Assistants vocaux dans les smartphones et enceintes connectées.",
+      "Traduction instantanée en voyage.",
+      "Recommandations personnalisées (streaming, achats, actualités)."
+    ]
+  },
+  {
+    domaine: "Recherche scientifique",
+    icone: "🔬",
+    exemples: [
+      "Prédiction de la structure 3D des protéines pour accélérer la recherche biomédicale.",
+      "Analyse de très grands jeux de données (climat, astronomie, génomique).",
+      "Aide à la rédaction et à la recherche bibliographique.",
+      "Simulation de phénomènes complexes (matériaux, réactions chimiques)."
+    ]
+  }
+];
+
+/* ---------------------------------------------------------
+   5. TECHNIQUES DE PROMPT ENGINEERING
+   --------------------------------------------------------- */
+const TECHNIQUES_PROMPT = [
+  { titre: "Sois précis sur l'objectif", desc: "Dis exactement ce que tu veux obtenir (« écris », « résume en 5 points », « compare »), pas juste un sujet vague." },
+  { titre: "Donne du contexte", desc: "Qui es-tu, pour qui c'est destiné, dans quelle situation. Plus l'IA a de contexte, plus sa réponse sera adaptée." },
+  { titre: "Assigne un rôle", desc: "« Tu es un professeur de physique qui explique à un lycéen » oriente fortement le style et le niveau de la réponse." },
+  { titre: "Précise le format de sortie", desc: "Tableau, liste à puces, code, JSON, longueur maximale... Sans précision, l'IA choisit un format par défaut." },
+  { titre: "Donne des exemples (few-shot)", desc: "Montrer 1 ou 2 exemples du résultat attendu aide énormément l'IA à reproduire exactement le style voulu." },
+  { titre: "Demande un raisonnement étape par étape", desc: "« Réfléchis étape par étape avant de conclure » améliore la justesse sur les problèmes logiques ou mathématiques." },
+  { titre: "Indique ce qu'il faut éviter", desc: "« Sans jargon technique », « sans emoji », « sans introduction inutile » : les contraintes négatives sont aussi utiles que les positives." },
+  { titre: "Itère au lieu de tout attendre du premier coup", desc: "Une IA n'est pas un moteur de recherche magique : dialogue, corrige, précise au fil de la conversation." },
+  { titre: "Demande à l'IA de te poser des questions", desc: "« Avant de répondre, pose-moi les questions nécessaires pour bien comprendre ma demande » évite les réponses à côté du sujet." },
+  { titre: "Utilise des délimiteurs", desc: "Sépare clairement tes instructions du contenu à traiter avec des balises comme ### ou des guillemets triples, surtout pour de longs textes." }
+];
+
+/* ---------------------------------------------------------
+   6. GABARITS DE PROMPTS PRÊTS À L'EMPLOI
+   --------------------------------------------------------- */
+const GABARITS_PROMPT = [
+  {
+    nom: "Résumer un document",
+    prompt: "Voici un document : [COLLE LE TEXTE ICI]\n\nRésume-le en 5 points clés maximum, dans un langage simple, pour quelqu'un qui n'a pas le temps de le lire en entier."
+  },
+  {
+    nom: "Expliquer un concept difficile",
+    prompt: "Explique-moi [CONCEPT] comme si j'avais 15 ans, avec une analogie concrète du quotidien. Ensuite, donne un exemple réel d'utilisation."
+  },
+  {
+    nom: "Rédiger un email professionnel",
+    prompt: "Rédige un email professionnel à [DESTINATAIRE] pour [OBJECTIF]. Ton : courtois et direct. Longueur : moins de 150 mots. Termine par une formule de politesse adaptée."
+  },
+  {
+    nom: "Déboguer du code",
+    prompt: "Voici mon code en [LANGAGE] :\n```\n[COLLE LE CODE]\n```\nIl devrait [COMPORTEMENT ATTENDU] mais [PROBLÈME OBSERVÉ]. Identifie la cause du bug, explique-la simplement, puis propose une correction."
+  },
+  {
+    nom: "Préparer un entretien",
+    prompt: "Je passe un entretien pour le poste de [POSTE] chez [ENTREPRISE/SECTEUR]. Pose-moi 5 questions d'entretien probables une par une, attends ma réponse à chaque fois, puis donne-moi un retour constructif sur ma réponse avant de passer à la suivante."
+  },
+  {
+    nom: "Comparer deux options",
+    prompt: "Compare [OPTION A] et [OPTION B] sous forme de tableau selon les critères suivants : [CRITÈRE 1], [CRITÈRE 2], [CRITÈRE 3]. Termine par une recommandation selon [MON CONTEXTE/BESOIN]."
+  }
+];
+
+/* ---------------------------------------------------------
+   7. IA EN LOCAL — étapes du tutoriel
+   --------------------------------------------------------- */
+const TUTO_LOCAL = [
+  {
+    titre: "1. Pourquoi faire tourner une IA en local ?",
+    contenu: "Confidentialité totale (rien ne sort de ta machine), utilisation gratuite et illimitée, fonctionne hors-ligne, et c'est une excellente façon d'apprendre concrètement comment marche un LLM."
+  },
+  {
+    titre: "2. Vérifier son matériel",
+    contenu: "Le facteur clé est la RAM (mémoire vive) et, idéalement, une carte graphique (GPU) avec de la VRAM. Repères indicatifs : 8 Go de RAM permettent de petits modèles (≈3 milliards de paramètres) ; 16 Go permettent des modèles moyens (7-8 milliards) ; 32 Go et plus, ou un bon GPU, permettent des modèles plus grands. Grâce à la quantization, ces modèles tiennent sur du matériel grand public."
+  },
+  {
+    titre: "3. Installer Ollama (la méthode la plus simple)",
+    contenu: "Ollama est un logiciel gratuit qui gère le téléchargement et l'exécution de modèles en une commande.\n\n• Va sur le site officiel d'Ollama et télécharge l'installeur pour ton système (Windows, macOS, Linux).\n• Une fois installé, ouvre un terminal et tape :\n  ollama pull llama3\n  (cela télécharge le modèle Llama 3)\n• Puis lance une conversation avec :\n  ollama run llama3\n• Tu peux remplacer « llama3 » par d'autres modèles disponibles (mistral, phi3, gemma, deepseek-coder...)."
+  },
+  {
+    titre: "4. Alternative avec interface graphique : LM Studio",
+    contenu: "LM Studio propose une interface visuelle (pas besoin de terminal) pour parcourir, télécharger et discuter avec des modèles open-weight. Idéal si les lignes de commande t'intimident."
+  },
+  {
+    titre: "5. Aller plus loin : interface web type ChatGPT",
+    contenu: "Des projets comme Open WebUI permettent d'avoir, en local, une interface de chat similaire à ChatGPT branchée sur les modèles gérés par Ollama, avec historique de conversation, plusieurs modèles, etc."
+  },
+  {
+    titre: "6. Pour les curieux : personnaliser un modèle",
+    contenu: "Une fois à l'aise, tu peux explorer le fine-tuning léger (LoRA) pour spécialiser un petit modèle open-weight sur tes propres données, en utilisant des bibliothèques comme Hugging Face Transformers ou des outils comme Axolotl. C'est une étape plus technique qui demande des bases en Python."
+  }
+];
+
+/* ---------------------------------------------------------
+   8. SOURCES POUR RESTER À JOUR (actus IA)
+   --------------------------------------------------------- */
+const SOURCES_ACTU = [
+  { nom: "Blog Anthropic", url: "https://www.anthropic.com/news", desc: "Annonces officielles sur Claude et la recherche en sécurité IA." },
+  { nom: "Blog OpenAI", url: "https://openai.com/news", desc: "Annonces officielles sur ChatGPT et les modèles OpenAI." },
+  { nom: "Google DeepMind Blog", url: "https://deepmind.google/discover/blog", desc: "Recherches et annonces de Google sur l'IA (Gemini et au-delà)." },
+  { nom: "Hugging Face Blog", url: "https://huggingface.co/blog", desc: "Actualité de l'open source en IA, nouveaux modèles, tutoriels techniques." },
+  { nom: "Mistral AI News", url: "https://mistral.ai/news", desc: "Actualités du principal acteur français/européen de l'IA générative." }
+];
+
+/* ---------------------------------------------------------
+   9. JALONS HISTORIQUES (frise) — repères pour comprendre l'évolution
+   --------------------------------------------------------- */
+const FRISE_HISTORIQUE = [
+  { date: "1950", texte: "Alan Turing propose le « test de Turing » pour évaluer si une machine peut imiter l'intelligence humaine." },
+  { date: "1956", texte: "Le terme « intelligence artificielle » est inventé lors de la conférence de Dartmouth." },
+  { date: "1997", texte: "Deep Blue (IBM) bat le champion du monde d'échecs Garry Kasparov." },
+  { date: "2012", texte: "AlexNet démontre la puissance du deep learning en reconnaissance d'images, relançant tout le domaine." },
+  { date: "2017", texte: "Le papier « Attention Is All You Need » introduit l'architecture Transformer, base de tous les LLM actuels." },
+  { date: "2020-2022", texte: "Explosion des IA génératives grand public : GPT-3, DALL·E, Stable Diffusion, Midjourney." },
+  { date: "Nov. 2022", texte: "Lancement public de ChatGPT : l'IA générative devient un phénomène mondial en quelques semaines." },
+  { date: "2023", texte: "Course mondiale entre les grands labos (GPT-4, Claude, Gemini/Bard, Llama 2, Mistral...), démocratisation des assistants de code IA." },
+  { date: "2024-2025", texte: "Montée en puissance des agents IA autonomes, du raisonnement long (« reasoning »), de la génération vidéo, et de l'IA open-weight compétitive (Llama, Mistral, DeepSeek)." },
+  { date: "2026", texte: "Les agents IA s'intègrent de plus en plus dans les outils de travail réels (code, recherche, automatisation), avec un débat croissant sur la réglementation et l'impact économique." }
+];
+
+/* ---------------------------------------------------------
+   10. QUIZ — questions à choix multiples
+   --------------------------------------------------------- */
+const QUIZ = [
+  {
+    q: "Que signifie « LLM » ?",
+    options: ["Long Learning Machine", "Large Language Model", "Logical Learning Method", "Live Language Machine"],
+    r: 1,
+    exp: "LLM = Large Language Model, un grand modèle de langage entraîné sur d'énormes quantités de texte."
+  },
+  {
+    q: "Qu'est-ce qu'une « hallucination » en IA ?",
+    options: ["Un bug d'affichage", "Une information fausse générée avec assurance", "Un mode de fonctionnement hors-ligne", "Une image générée par erreur"],
+    r: 1,
+    exp: "Une hallucination est une information inventée par l'IA mais présentée comme vraie — il faut toujours vérifier les faits importants."
+  },
+  {
+    q: "Qu'est-ce qu'un « token » ?",
+    options: ["Une clé de sécurité API uniquement", "Un petit morceau de texte traité par le modèle", "Un type de carte graphique", "Une unité de température du modèle"],
+    r: 1,
+    exp: "Un token est l'unité de texte (souvent un morceau de mot) que le modèle lit et génère."
+  },
+  {
+    q: "Un modèle « open-weight » signifie...",
+    options: ["Qu'il est gratuit à l'usage sur toutes les plateformes", "Que ses paramètres entraînés sont téléchargeables et utilisables librement", "Qu'il pèse moins lourd en mémoire", "Qu'il n'a pas été entraîné sur des données réelles"],
+    r: 1,
+    exp: "Open-weight veut dire que les paramètres (« poids ») du modèle sont publiés et peuvent être téléchargés pour être utilisés/modifiés."
+  },
+  {
+    q: "Le RAG (Retrieval-Augmented Generation) sert à...",
+    options: ["Rendre l'IA plus créative", "Donner à l'IA accès à des documents externes pour répondre avec des infos fiables/à jour", "Accélérer la génération d'images", "Réduire la taille du modèle"],
+    r: 1,
+    exp: "Le RAG permet à l'IA d'aller chercher de l'information dans des documents externes avant de répondre, plutôt que de compter uniquement sur sa mémoire d'entraînement."
+  },
+  {
+    q: "Quelle technique de prompt engineering aide le plus sur un problème de logique complexe ?",
+    options: ["Écrire en majuscules", "Demander un raisonnement étape par étape", "Répéter la question trois fois", "Utiliser le moins de mots possible"],
+    r: 1,
+    exp: "Demander à l'IA de raisonner étape par étape (« chain-of-thought ») améliore souvent nettement la justesse sur les tâches de raisonnement."
+  },
+  {
+    q: "Faire tourner une IA « en local » signifie...",
+    options: ["L'utiliser uniquement en France", "La faire fonctionner directement sur son propre ordinateur, sans passer par un serveur distant", "L'utiliser sans connexion à un compte", "L'utiliser seulement via une application mobile"],
+    r: 1,
+    exp: "En local = le modèle tourne sur ta machine (via Ollama, LM Studio...), ce qui garantit confidentialité et fonctionnement hors-ligne."
+  },
+  {
+    q: "Qu'est-ce que le « fine-tuning » ?",
+    options: ["La toute première phase d'entraînement d'un modèle depuis zéro", "Un réglage léger et spécialisé d'un modèle déjà entraîné", "La suppression de données inutiles", "Un test de performance du matériel"],
+    r: 1,
+    exp: "Le fine-tuning ré-entraîne légèrement un modèle déjà compétent pour le spécialiser sur une tâche ou un domaine précis."
+  },
+  {
+    q: "Qu'est-ce qui distingue un « agent IA » d'un simple chatbot ?",
+    options: ["L'agent ne fait que discuter, sans jamais agir", "L'agent peut utiliser des outils et enchaîner des actions de façon autonome pour atteindre un objectif", "L'agent est toujours gratuit", "Il n'y a aucune différence"],
+    r: 1,
+    exp: "Un agent IA peut décider lui-même des étapes à suivre et utiliser des outils (code, web, fichiers...) pour atteindre un objectif, au-delà d'une simple réponse textuelle."
+  },
+  {
+    q: "Pourquoi faut-il rester prudent avec les réponses d'une IA générative ?",
+    options: ["Parce qu'elle refuse toujours de répondre", "Parce qu'elle peut halluciner des informations fausses avec assurance", "Parce qu'elle est toujours payante", "Parce qu'elle ne comprend jamais le français"],
+    r: 1,
+    exp: "Toute IA générative peut se tromper et présenter une erreur avec la même assurance qu'une vérité — d'où l'importance de vérifier les infos critiques."
+  },
+  {
+    q: "Qu'apporte le mécanisme d'« attention » dans un Transformer ?",
+    options: ["Il accélère l'affichage à l'écran", "Il permet au modèle de pondérer l'importance de chaque mot par rapport aux autres dans une phrase", "Il chiffre les données de l'utilisateur", "Il limite le nombre de tokens utilisés"],
+    r: 1,
+    exp: "L'attention permet au modèle de relier chaque mot aux autres mots pertinents du texte, même éloignés, pour mieux comprendre le sens global."
+  },
+  {
+    q: "Un modèle « multimodal » peut...",
+    options: ["Fonctionner sur plusieurs systèmes d'exploitation seulement", "Traiter/générer plusieurs types de contenus (texte, image, audio...)", "Répondre dans plusieurs langues uniquement", "Être utilisé par plusieurs personnes en même temps"],
+    r: 1,
+    exp: "Multimodal signifie que le modèle comprend et/ou génère plusieurs types de données : texte, image, audio, vidéo."
+  }
+];
+
+/* ---------------------------------------------------------
+   11. EXERCICES PRATIQUES DE PROMPT (auto-évaluation)
+   --------------------------------------------------------- */
+const EXERCICES_PRATIQUES = [
+  {
+    titre: "Exercice 1 — Expliquer un sujet complexe",
+    consigne: "Choisis un sujet que tu ne maîtrises pas (ex : la blockchain, la physique quantique, l'inflation). Écris un prompt pour qu'une IA te l'explique parfaitement à ton niveau.",
+    checklist: [
+      "As-tu précisé ton niveau de connaissance actuel ?",
+      "As-tu demandé une analogie concrète ?",
+      "As-tu précisé une longueur ou un format (ex : 200 mots, 3 paragraphes) ?",
+      "As-tu demandé un exemple d'application réelle à la fin ?"
+    ]
+  },
+  {
+    titre: "Exercice 2 — Rôle + contexte",
+    consigne: "Écris un prompt qui assigne un rôle précis à l'IA (ex : coach sportif, avocat, chef cuisinier) pour résoudre un problème concret de ta vie quotidienne.",
+    checklist: [
+      "Le rôle assigné est-il clair et pertinent pour la tâche ?",
+      "As-tu donné le contexte nécessaire (ta situation, tes contraintes) ?",
+      "As-tu précisé ce que tu attends comme résultat concret ?"
+    ]
+  },
+  {
+    titre: "Exercice 3 — Itération",
+    consigne: "Demande à une IA d'écrire un court texte (ex : une bio LinkedIn). Puis, sans tout réécrire, donne 3 retours successifs pour l'améliorer progressivement (ton, longueur, mot-clé à ajouter).",
+    checklist: [
+      "As-tu donné un retour précis à chaque itération plutôt que « c'est pas bien » ?",
+      "Le texte s'est-il amélioré à chaque étape ?",
+      "As-tu gardé le fil de la conversation plutôt que de tout recommencer ?"
+    ]
+  },
+  {
+    titre: "Exercice 4 — Format structuré",
+    consigne: "Demande à une IA de comparer 3 choses au choix (films, villes, langages de programmation...) sous forme de tableau avec au moins 4 critères.",
+    checklist: [
+      "Le tableau a-t-il bien le nombre de colonnes/critères demandé ?",
+      "As-tu demandé une recommandation finale basée sur un besoin précis ?"
+    ]
+  },
+  {
+    titre: "Exercice 5 — Raisonnement étape par étape",
+    consigne: "Donne à une IA un petit problème logique ou mathématique et demande-lui explicitement de réfléchir étape par étape avant de conclure. Compare avec une version où tu ne le demandes pas.",
+    checklist: [
+      "Vois-tu une différence de qualité/justesse entre les deux réponses ?",
+      "Le raisonnement étape par étape est-il compréhensible et suivi logiquement ?"
+    ]
+  }
+];
+
+/* ---------------------------------------------------------
+   12. PARCOURS DE FORMATION / CARRIÈRE
+   --------------------------------------------------------- */
+const PARCOURS_FORMATION = [
+  {
+    niveau: "Débutant",
+    duree: "0 à 2 mois",
+    objectifs: [
+      "Comprendre le vocabulaire de base (section Concepts + Glossaire de cette app).",
+      "Utiliser une IA générative tous les jours pour des tâches réelles (email, résumé, brainstorming).",
+      "Faire les quiz et exercices de cette app jusqu'à obtenir un score élevé.",
+      "S'abonner à 1-2 sources d'actualité IA fiables (section « Rester à jour »)."
+    ]
+  },
+  {
+    niveau: "Intermédiaire",
+    duree: "2 à 6 mois",
+    objectifs: [
+      "Maîtriser le prompt engineering avancé (few-shot, chain-of-thought, system prompt).",
+      "Apprendre les bases de Python (variables, fonctions, boucles) — utile pour aller plus loin.",
+      "Découvrir les API des IA (Anthropic, OpenAI) pour comprendre comment les développeurs les utilisent.",
+      "Installer et utiliser une IA en local (section « IA en local » de cette app).",
+      "Explorer des outils no-code d'automatisation combinés à l'IA (scénarios simples)."
+    ]
+  },
+  {
+    niveau: "Avancé",
+    duree: "6 mois et plus",
+    objectifs: [
+      "Suivre un cours structuré de Machine Learning (ex : spécialisation Machine Learning / Deep Learning en ligne, cours Hugging Face, fast.ai).",
+      "Apprendre à fine-tuner un modèle open-weight (LoRA) sur un petit projet personnel.",
+      "Comprendre en profondeur les architectures RAG et les agents multi-outils.",
+      "Contribuer à un projet open source lié à l'IA (Hugging Face, dépôts GitHub d'outils IA).",
+      "Construire un petit portfolio de projets concrets (chatbot spécialisé, outil d'automatisation, application avec une API IA)."
+    ]
+  }
+];
+
+const METIERS_IA = [
+  { nom: "Prompt Engineer / AI Trainer", desc: "Conçoit et optimise les instructions données aux IA pour des cas d'usage précis, évalue la qualité des réponses." },
+  { nom: "Data Scientist", desc: "Analyse des données et construit des modèles prédictifs, souvent à l'aide de Machine Learning." },
+  { nom: "Machine Learning Engineer", desc: "Conçoit, entraîne et met en production des modèles d'IA à grande échelle." },
+  { nom: "AI Product Manager", desc: "Définit la stratégie produit d'un outil intégrant de l'IA, fait le lien entre besoins utilisateurs et équipes techniques." },
+  { nom: "AI Safety / Alignment Researcher", desc: "Travaille à rendre les IA plus sûres, plus fiables et alignées avec les intentions humaines." },
+  { nom: "AI Ethicist / spécialiste gouvernance IA", desc: "Étudie et encadre les impacts sociétaux, légaux et éthiques du déploiement de l'IA." }
+];
+
+const RESSOURCES_APPRENTISSAGE = [
+  { nom: "Hugging Face — cours NLP/LLM gratuit", url: "https://huggingface.co/learn", desc: "Cours pratique et gratuit sur les modèles de langage, avec exercices en Python." },
+  { nom: "Google — Machine Learning Crash Course", url: "https://developers.google.com/machine-learning/crash-course", desc: "Introduction gratuite aux fondamentaux du Machine Learning." },
+  { nom: "DeepLearning.AI", url: "https://www.deeplearning.ai", desc: "Cours en ligne (dont certains gratuits) fondés par Andrew Ng, référence historique du domaine." },
+  { nom: "fast.ai", url: "https://www.fast.ai", desc: "Cours gratuit et très pratique de deep learning, orienté « coder d'abord, comprendre la théorie ensuite »." },
+  { nom: "Documentation Anthropic — Prompt engineering", url: "https://docs.anthropic.com", desc: "Guide officiel et très complet sur l'art du prompt engineering avec Claude." },
+  { nom: "Kaggle", url: "https://www.kaggle.com", desc: "Plateforme de compétitions de data science, avec des mini-cours gratuits et des jeux de données réels." }
+];
